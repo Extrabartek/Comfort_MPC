@@ -1,13 +1,15 @@
 % Weighting factors for ride comfort assesment
 % Using: http://resolver.tudelft.nl/uuid:3cfc846a-8f7d-4479-a88e-4615422071b6
 
+clear, clc
 s = tf('s');
 
 n_points = 10e5;
 f = linspace(0.01,1000,n_points);
 w = f * 2 * pi;
 
-% Weight filters %
+%% Run section
+%%% Weight filters HIGH ORDER %%%
 % Vertical acceleration weighting (ISO 2631-1)
 Wv = (87.72 * s^4 + 1138 * s^3 + 11336 * s^2 + 5452 * s + 5509) / ...
     (s^5 + 92.6854 * s^4 + 2549.83 * s^3 + 25969 * s^2 + 81057 * s + 79783);
@@ -37,7 +39,6 @@ setoptions(bp1,'FreqUnits','Hz', 'MagUnits', 'abs', 'FreqScale', 'log', 'MagScal
 [magnitudeWeightMotion, phaseWeightMotion] =  bode(Wm, w);
 
 figure(4);
-grid on
 loglog(f, magnitudeWeightVertical(:))
 hold on
 grid on
@@ -48,3 +49,16 @@ ylim([0.01, 2])
 legend("Vertical","Horizontal","Motion")
 xlabel("Frequency [Hz]")
 ylabel("Gain [-]")
+
+%% Run section
+%%% Weight filters LOW ORDER %%%
+
+% Wv_low = 86.51 * s + 546.1 * s^2 + 82.17 * s + 1892;
+
+Wv_low = 50 * s + 500 * s^2 + 50 * s + 1200;
+
+[magnitudeWeightVerticalLow, phaseWeightVerticalLow] =  bode(Wv_low, w);
+
+figure(5)
+loglog(f, magnitudeWeightVerticalLow(:))
+
