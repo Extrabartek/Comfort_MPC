@@ -17,14 +17,18 @@ d_s = 0.3 * (2 * m_s * wn_s);                        % damping ratio
 % frequency range determination
 n_points = 5000;
 w = linspace(0.1,100,n_points)*2*pi;
+
+%% 
 % passive QC
 % state matrix
 A = [0, 1, 0, 0;...                                  % unsprung displacement - road disturbance
     -k_t / m_u, -d_s / m_u, k_s / m_u, d_s / m_u;... % unsprung mass acceleration
     0, -1, 0, 1;...                                  % sprung displacement - unsprung displacement
     0, d_s / m_s, -k_s / m_s, -d_s / m_s];           % sprung mass acceleration
+
 B = [0, m_s / m_u, 0, -1]';                          % control matrix
 G = [0, k_t / m_u, 0, 0]';
+
 % output matrix
 C = [k_t 0 0 0;...                                   % tire force
      0 0 1 0;...                                     % suspension stroke
