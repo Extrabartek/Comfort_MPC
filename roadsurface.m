@@ -23,6 +23,7 @@ L = 60;             % m
 
 %Generate profile
 profile = isolatedBump(tValues, A, V, l, L);
+profile = isolatedTable(tValues, V, l);
 
 % Post processing
 figure()
@@ -56,6 +57,48 @@ function heightProfile = isolatedBump(tValues, A, V, l, L)
         
         if ((l / V) <= t) && (t <= (l + L) / V)
             height = (A / 2) * (1 - cos(2 * pi * (V * t - l) / L));
+        else
+            height = 0;
+        end
+        
+        heightProfile(idx) = height;
+    
+    end
+end
+
+function heightProfile = isolatedTable(tValues, l, V)
+    % Generate an isolated table, based on the specified input criteria.
+    %
+    % Inputs:
+    % -------
+    % tValues = 1D array of the time values at which the road surface should 
+    % be created.
+    % V       = Velocity of the vehicle in meter per second
+    % l       = Start position of the table in meter
+    % Outputs:
+    % -------
+    % heightProfile = 1D array containing the height profile with values 
+    %                   provided in meter [0,0,0,0,0.1,0.3,...]
+    
+    heightProfile = zeros(1,length(tValues));
+    
+    A = 0.09;                   % 90cm table in meter
+    L = 6.4;                    % 6.4m length of table in meter
+    slope = 1 / 25;             % slope of the ramp
+    tableLength = A / slope;    % distance before/ after the table
+
+    for idx = 1:length(tValues)
+        
+        t = tValues(idx);
+
+        if ((l / V) <= t) && (t <= (l + L) / V)
+            if ((l + tableLength) / V) >= t
+                height = slope * (t * V - l);
+            elseif ((l + L - tableLength) / V) <= t
+                height = -slope * (t * V - (l+L));
+            else
+                height = A;
+            end
         else
             height = 0;
         end
