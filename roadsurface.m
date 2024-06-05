@@ -3,8 +3,9 @@
 % -> Standard bumb (https://ieeexplore.ieee.org/document/8357907)
 % -> Bump sequence 
 % -> Table top
-% -> Sharp 
-%
+% -> Sharp (TODO)
+% -> Circle (TODO)
+% -> Use a combination to get a complete test setup
 %
 % Dimension site: https://www.dimensions.com/element/speed-bump-standard
 %%%
@@ -22,7 +23,7 @@ l = 30;             % m
 L = 60;             % m
 
 %Generate profile
-profile = isolatedBump(tValues, A, V, l, L);
+% profile = isolatedBump(tValues, A, V, l, L);
 profile = isolatedTable(tValues, V, l);
 
 % Post processing
@@ -66,8 +67,12 @@ function heightProfile = isolatedBump(tValues, A, V, l, L)
     end
 end
 
-function heightProfile = isolatedTable(tValues, l, V)
+function heightProfile = isolatedTable(tValues, V, l)
     % Generate an isolated table, based on the specified input criteria.
+    % Sources:
+    % https://www.dimensions.com/element/speed-bump-table
+    % https://highways.dot.gov/safety/speed-management/traffic-calming-eprimer/module-3-part-2#3.12
+    % https://nacto.org/publication/urban-street-design-guide/street-design-elements/vertical-speed-control-elements/speed-table/
     %
     % Inputs:
     % -------
@@ -95,7 +100,7 @@ function heightProfile = isolatedTable(tValues, l, V)
             if ((l + tableLength) / V) >= t
                 height = slope * (t * V - l);
             elseif ((l + L - tableLength) / V) <= t
-                height = -slope * (t * V - (l+L));
+                height = -slope * (t * V - (l + L));
             else
                 height = A;
             end
