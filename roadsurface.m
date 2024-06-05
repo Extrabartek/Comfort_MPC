@@ -6,11 +6,10 @@
 % -> Sharp (TODO)
 % -> Circle (TODO)
 % -> Use a combination to get a complete test setup
+% -> Long sinusoidal road (IDEA)
 %
 % Dimension site: https://www.dimensions.com/element/speed-bump-standard
 %%%
-
-clear, clc
 
 % Time init
 f = 100;            % Hz
