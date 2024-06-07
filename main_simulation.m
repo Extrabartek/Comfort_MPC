@@ -55,7 +55,8 @@ road = [uf ur];
 
 n = length(uf); % number of simulation steps
 state_history = zeros(n, 8);
-derivative_history = zeros(n, 8); 
+derivative_history = zeros(n, 8);
+acceleration_history = zeros(n, 2);
 
 dt = 0.0001;
 
@@ -77,8 +78,9 @@ for i = 1:1:T
     derivative_history(i, :) = derivative';
 
     state = (state' + derivative*dt)';
+    acceleration_history(i, :) = acceleration_calc(state, road(i, :), par);
 
 
 end
 
-
+plot(1:1:T, acceleration_history(:, 1));
