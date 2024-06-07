@@ -46,7 +46,7 @@ xlabel('time [s]')
 % title('Road Profile');
 
 
-function heightProfile = isolatedBump(tValues, A, V, l, L)
+function [heightProfile, time] = isolatedBump(tValues, A, V, l, L)
     % Generate an isolated bump, based on the specified input criteria.
     %
     % Inputs:
@@ -80,7 +80,7 @@ function heightProfile = isolatedBump(tValues, A, V, l, L)
 end
 
 
-function heightProfile = isolatedTable(tValues, V, l)
+function [heightProfile, time] = isolatedTable(tValues, V, l)
     % Generate an isolated table, based on the specified input criteria.
     % Sources:
     % https://www.dimensions.com/element/speed-bump-table
