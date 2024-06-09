@@ -23,7 +23,7 @@ function [WRMQ] = wrmq(a_z, ts)
     H_f = freqresp(Wv, omega); % H_f is a frequency response data object
     
     % Since freqresp returns a 3D array, we need to reshape it to a 1D array
-    H_f = squeeze(H_f);
+    H_f = squeeze(H_f)';
 
     A_f = fft(a_z);
 
@@ -35,5 +35,5 @@ function [WRMQ] = wrmq(a_z, ts)
 
     a_w = real(ifft(A_w_f));
         
-    WRMQ = (1/(sum(ts))*(sum((a_w.^4).*ts)))^4;
+    WRMQ = (1/(sum(ts))*(sum((a_w.^4).*ts)))^(1/4);
 end

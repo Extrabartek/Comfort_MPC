@@ -23,7 +23,7 @@ function VDV = vdv(a_z, ts)
     H_f = freqresp(Wv, omega); % H_f is a frequency response data object
     
     % Since freqresp returns a 3D array, we need to reshape it to a 1D array
-    H_f = squeeze(H_f);
+    H_f = squeeze(H_f)';
 
     A_f = fft(a_z);
 
@@ -35,5 +35,5 @@ function VDV = vdv(a_z, ts)
     
     a_w = real(ifft(A_w_f));
         
-    VDV = (sum((a_w.^4)).*ts)^(1/4);
+    VDV = (sum((a_w.^4).*ts))^(1/4);
 end

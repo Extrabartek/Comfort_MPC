@@ -20,24 +20,16 @@ function [WRMS] = wrms(a_z, ts)
     omega = 2 * pi * frequencies;
     
     % Evaluate the transfer function at these frequencies
-    H_f = freqresp(Wv, omega); % H_f is a frequency response data object
+    [resp, freq] = freqresp(Wv, omega); % H_f is a frequency response data object
+    resp = squeeze(resp)';
     
-    % Since freqresp returns a 3D array, we need to reshape it to a 1D array
-    H_f = squeeze(H_f);
-
     A_f = fft(a_z);
-
-    % Define the weighting function in the frequency domain
-    % n = length(acceleration);
-    % frequencies = (0:n-1) * (1/n); % Frequency bins
-
-    A_w_f = A_f.*H_f;
     
-    disp(size(A_w_f))
+    A_w_f = A_f.*resp;
+    
     a_w = real(ifft(A_w_f));
-    a_quad = a_w.^4;
-    disp(size(a_quad))
+
     integral = sum((a_w.^4).*ts);
-    disp(size(integral))
+    
     WRMS = sqrt(1/(sum(ts))*integral);
 end
