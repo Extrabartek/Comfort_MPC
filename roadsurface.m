@@ -13,27 +13,40 @@
 
 % Time init
 f = 100;            % Hz
-tValues = 0:1/f:10; % [s] Array of to be evaluated timesteps
 
 % Tunable parametrs (dependent on bump surface)
 A = 0.3;            % m
 V = 36 / 3.6;       % km/h
-l = 30;             % m
-L = 60;             % m
+l = 10;             % m
+L = 10;             % m
 
 %Generate profile
-% profile = isolatedBump(tValues, A, V, l, L);
-profile = isolatedTable(tValues, V, l);
+profileBump = isolatedBump(f, A, V, l, L, 10);
+profileTable = isolatedTable(f, V, l, 10);
+profileISO = isoRoad(f, V, 10);
+
+profileTime = 0:1/f:10;
+% profile = [profileBump, profileTable];
+% profileTime = [tValues, tValues + tValues(end)];
 
 % Post processing
 figure()
-plot(tValues, profile, '-o')
-ylim([0, ceil(A)])
+plot(profileTime, profileBump, '-o')
+% ylim([0, ceil(A)])
 ylabel('Height [m]')
 xlabel('time [s]')
 
+% profile = isoRoad(f, V, L);
+% tValues = linspace(0,L/V,length(profile));
+% 
+% figure()
+% plot(tValues, profile);
+% xlabel('Time in s');
+% ylabel('Displacement in mm');
+% title('Road Profile');
 
-function heightProfile = isolatedBump(tValues, A, V, l, L)
+
+function [heightProfile, time] = isolatedBump(f, A, V, l, L, endTime)
     % Generate an isolated bump, based on the specified input criteria.
     %
     % Inputs:
@@ -48,7 +61,8 @@ function heightProfile = isolatedBump(tValues, A, V, l, L)
     % -------
     % heightProfile = 1D array containing the height profile with values 
     %                   provided in meter [0,0,0,0,0.1,0.3,...]
-
+    
+    tValues = 0:1/f:endTime; % [s] Array of to be evaluated timesteps
     heightProfile = zeros(1,length(tValues));
     
     for idx = 1:length(tValues)
@@ -66,7 +80,8 @@ function heightProfile = isolatedBump(tValues, A, V, l, L)
     end
 end
 
-function heightProfile = isolatedTable(tValues, V, l)
+
+function [heightProfile, time] = isolatedTable(f, V, l, endTime)
     % Generate an isolated table, based on the specified input criteria.
     % Sources:
     % https://www.dimensions.com/element/speed-bump-table
@@ -84,9 +99,10 @@ function heightProfile = isolatedTable(tValues, V, l)
     % heightProfile = 1D array containing the height profile with values 
     %                   provided in meter [0,0,0,0,0.1,0.3,...]
     
+    tValues = 0:1/f:endTime; % [s] Array of to be evaluated timesteps
     heightProfile = zeros(1,length(tValues));
     
-    A = 0.09;                   % 90cm table in meter
+    A = 0.09;                   % 9cm table in meter
     L = 6.4;                    % 6.4m length of table in meter
     slope = 1 / 25;             % slope of the ramp
     tableLength = A / slope;    % distance before/ after the table
@@ -110,4 +126,31 @@ function heightProfile = isolatedTable(tValues, V, l)
         heightProfile(idx) = height;
     
     end
+end
+
+
+function heightProfile = isoRoad(f, V, t)
+    % Road profile generation based on ISO norm
+    rng(20);
+    k    = 3;                                   % Values For ISO Road A-B Roughness Classification, from 1 to 3 (to be checked)
+    % V    = 40/3.6;                            % Vehicle Speed (m/s)
+    % L    = 500;                               % Length Of Road Profile (m)
+    L    = t * V;                                 % measurement time (s)
+    % t    = L/V;                                 % measurement time (s)
+    % f    = 100;                               % Sampling frequency (Hz)
+    N    = f*t;                                 % Number of data points
+    B    = L/N ;                                % Sampling Interval (m)
+    dn   = 1/L;                                 % Frequency Band
+    n0   = 0.1;                                 % Spatial Frequency (cycles/m)
+    n    = dn : dn : N*dn;                      % Spatial Frequency Band
+    phi  = 2*pi*rand(size(n));                  % Random Phase Angle
+    Amp1 = sqrt(dn)*(2^k)*(1e-3)*(n0./n);       % Amplitude for Road  Class A-B
+    x = 0:B:L;                                % Abscissa Variable from 0 to L
+    hx = zeros(size(x));
+    for i=1:length(x)
+        hx(i) = sum(Amp1.*cos(2*pi*n*x(i)+ phi));
+    end
+    total_time = linspace(0,t,length(hx));
+
+    heightProfile = hx;
 end

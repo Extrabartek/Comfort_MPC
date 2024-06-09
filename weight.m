@@ -53,12 +53,24 @@ ylabel("Gain [-]")
 %% Run section
 %%% Weight filters LOW ORDER %%%
 
-% Wv_low = 86.51 * s + 546.1 * s^2 + 82.17 * s + 1892;
+Wv_low = (50 * s + 500) / (s^2 + 50 * s + 1200);
+Wv_low = (86.51 * s + 546.1) / (s^2 + 82.17 * s + 1892);
+Wh_low = (13.55 * s) / (s^2 + 12.90 * s + 47.16);
+Wm_low = (0.8892 * s) / (s^2 + 0.8263 * s + 1.163);
 
-Wv_low = 50 * s + 500 * s^2 + 50 * s + 1200;
+[magnitudeWeightVertical_low, phaseWeightVertical_low] =  bode(Wv_low, w);
+[magnitudeWeightHorizontal_low, phaseWeightHorizontal_low] =  bode(Wh_low, w);
+[magnitudeWeightMotion_low, phaseWeightMotion_low] =  bode(Wm_low, w);
 
-[magnitudeWeightVerticalLow, phaseWeightVerticalLow] =  bode(Wv_low, w);
-
-figure(5)
-loglog(f, magnitudeWeightVerticalLow(:))
+figure(5);
+loglog(f, magnitudeWeightVertical_low(:))
+hold on
+grid on
+grid minor
+loglog(f, magnitudeWeightHorizontal_low(:))
+loglog(f, magnitudeWeightMotion_low(:))
+ylim([0.01, 2])
+legend("Vertical","Horizontal","Motion")
+xlabel("Frequency [Hz]")
+ylabel("Gain [-]")
 
