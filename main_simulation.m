@@ -24,7 +24,7 @@ par.a3 = 1/par.ms + (par.l2^2)/par.I;
 
 %% State Vector
 
-state = [0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1];
+state = [0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0];
 
 % List of states:
 % 1 - suspension deflection of the front car body
@@ -39,48 +39,52 @@ state = [0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1];
 
 %% Road Excitation
 
-% this is where the road profile will be generated
+% Time init
+f = 10000;            % Hz
+tValues = 0:1/f:10; % [s] Array of to be evaluated timesteps
 
-T = 100000;
+% Tunable parametrs (dependent on bump surface)
+A = 0.9;            % m
+V = 3.6 / 3.6;       % km/h
+l = 5;             % m
+L = 60;             % m
 
-uf = zeros(T, 1);
+roadsurface;
 
-% the road profile needs to be delayed for the rear wheels
-
-ur = zeros(T,1);
-
-road = [uf ur];
+rear_profile =   [zeros(1, ceil(f*(par.l1 + par.l2)/V)) profile];
 
 %% The simulation loop
-
-n = length(uf); % number of simulation steps
+dt = 1/f;
+n = length(tValues);
 state_history = zeros(n, 8);
 derivative_history = zeros(n, 8);
 acceleration_history = zeros(n, 2);
 
-dt = 0.0001;
+d_skyhook = 0 * 1000.0;
 
-
-
-for i = 1:1:T
+for i = 1:1:n
     
     % calculate the forcing
     % the controller goes here
-
+    
     
     %road(i,1) = sin(dt*i*1);
  
     %road(i,2) = sin(dt*i*100 - 0.01);
 
-    derivative = half_car(state, [0 0], [0 0], par);
+    derivative = half_car(state, [profile(i) rear_profile(i)], [0 0], par);
     
     state_history(i, :) = state;
     derivative_history(i, :) = derivative';
 
     state = (state' + derivative*dt)';
-    acceleration_history(i, :) = acceleration_calc(state, road(i, :), par);
+    acceleration_history(i, :) = acceleration_calc(state, [profile(i) rear_profile(i)], par);
 
 
 end
 
-plot(1:1:T, acceleration_history(:, 1));
+
+
+%% Plotting
+plot(tValues, profile, 'Color','red')
+plot(tValues, rear_profile(1:n), 'Color', 'blue')
