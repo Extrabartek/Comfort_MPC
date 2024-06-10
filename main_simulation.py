@@ -27,10 +27,11 @@ endTime = 10  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
-A = 1  # amplitude of the bump [m]
-V = 75 / 3.6  # velocity of the car [m/s]
-l = 5  # length of the bump [m]
-L = 60  # length until the bump [m]
+A = 0.1  # amplitude of the bump [m]
+V = 25 / 3.6  # velocity of the car [m/s]
+tl = 3  # time of the bump [s]
+l = 3 * V # position of the bump [m]
+L = 0.5  # length of the bump [m]
 
 # run the script to create the road profile
 road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
@@ -56,12 +57,16 @@ state_history = np.zeros((n, 8))  # state history
 derivative_history = np.zeros((n, 8))  # derivative history
 acceleration_history = np.zeros((n, 2))  # acceleration history
 
+# generate road profile derivatives
+road_profile_derivative_front = np.gradient(road_profile_front, dt)
+road_profile_derivative_rear = np.gradient(road_profile_rear, dt)
+
 # get the state-spaces matrices
 A, B, F, C, E = half_car_state_space(par, 1, 1)
 
 for i in range(n):
-    # get the current road profile
-    road_profile = np.array([road_profile_front[i], road_profile_rear[i]])
+    # create the road profile based on the derivative
+    road_profile = np.array([road_profile_derivative_front[i], road_profile_derivative_rear[i]])
 
     # calculate the acceleration
     derivative = np.dot(A, state.T) + np.dot(B, road_profile.T) + np.dot(F, np.array([0, 0]).T)
@@ -78,6 +83,13 @@ for i in range(n):
     acceleration_history[i] = acceleration
 
 
-plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
-
+# plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
+# plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
+plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
+plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
+plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
+# plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
+# plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
+plt.legend()
+plt.xlim([3, 4])
 plt.show()

@@ -31,7 +31,7 @@ def isolatedBump(f, A, V, l, L, endTime) -> list[float]:
     # heightProfile = 1D array containing the height profile with values 
     #                   provided in meter [0,0,0,0,0.1,0.3,...]
     
-    tValues = np.arange(0, endTime + 1/f, 1/f); # [s] Array of to be evaluated timestamps
+    tValues = np.arange(0, endTime + 1/f, 1/f) # [s] Array of to be evaluated timestamps
     heightProfile = np.zeros(len(tValues))
     
     for idx in range(len(tValues)):
