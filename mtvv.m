@@ -5,9 +5,9 @@
 % Output:
 %   MTVV - weighted root mean square value of vertical acceleration time series
 function MTVV = mtvv(a_z, ts)
-    MTVV = zeros(length(a_z));
+    MTVV = zeros(1,length(a_z));
     RWRMS = rwrms(a_z, ts);
     for i = 1:length(ts)
-        MTVV(i) = max(RWRMS(1:i));
+        MTVV(1, i) = max(RWRMS(1:i));
     end
 end

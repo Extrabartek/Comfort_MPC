@@ -5,9 +5,9 @@
 % Output:
 %   RWRMS - array of running weighted root mean square value of vertical acceleration time series
 function [RWRMS] = rwrms(a_z, ts)
-    RWRMS = zeros(length(a_z));
+    RWRMS = zeros(1,length(a_z));
     for i = 1:length(ts)
         t = ts(i);
-        RWRMS(i) = wrms(a_z(t<=ts), ts(t<=ts));
+        RWRMS(1,i) = wrms(a_z(1, t<=ts), ts(1, t<=ts));
     end
 end
