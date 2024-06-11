@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 from roadsurface import isolatedBump, isolatedTable, isoRoad
 from state_space_half_car import half_car_state_space, Parameters
+from quarter import solve
 
 par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
@@ -22,15 +23,15 @@ state = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 # 8 - vertical velocity of the rear wheel
 
 # Time init
-f = 10000  # Hz
+f = 1000  # Hz
 endTime = 10  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
-V = 25 / 3.6  # velocity of the car [m/s]
-tl = 3  # time of the bump [s]
-l = 3 * V # position of the bump [m]
+V = 45 / 3.6  # velocity of the car [m/s]
+tl = 0.01  # time of the bump [s]
+l = 3 * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
 
 # run the script to create the road profile
@@ -52,6 +53,9 @@ for i in range(len(road_profile_rear)):
 # The simulation loop
 
 dt = 1 / f  # time step [s]
+Np = 10  # length of the prediction horizon in points
+t_prediction = 0.05  # length of the prediction horizon in seconds
+dt_prediction = t_prediction / Np  # time step of the prediction horizon [s]
 n = len(tValues)  # number of samples
 state_history = np.zeros((n, 8))  # state history
 derivative_history = np.zeros((n, 8))  # derivative history
@@ -62,12 +66,21 @@ road_profile_derivative_front = np.gradient(road_profile_front, dt)
 road_profile_derivative_rear = np.gradient(road_profile_rear, dt)
 
 # get the state-spaces matrices
-A, B, F, C, E = half_car_state_space(par, 1, 1)
+A, B, F, C, E = half_car_state_space(par)
 
 for i in range(n):
     # create the road profile based on the derivative
     road_profile = np.array([road_profile_derivative_front[i], road_profile_derivative_rear[i]])
 
+    # create the road profile for the prediction horizon
+    prediction_road_profile = np.zeros((Np, 2))
+    for j in range(Np):
+        index = i + j * int(dt_prediction / dt)
+        if index >= len(tValues):
+            prediction_road_profile[j] = np.array([0, 0])
+        else:
+            prediction_road_profile[j] = np.array([road_profile_front[index], road_profile_rear[index]])
+    print(prediction_road_profile)
     # calculate the acceleration
     derivative = np.dot(A, state.T) + np.dot(B, road_profile.T) + np.dot(F, np.array([0, 0]).T)
 
@@ -82,14 +95,13 @@ for i in range(n):
     derivative_history[i] = derivative
     acceleration_history[i] = acceleration
 
-
 # plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
 # plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
-plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
-plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
+# plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
+# plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
+# plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
 # plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
 # plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
-plt.legend()
-plt.xlim([3, 4])
-plt.show()
+# plt.legend()
+# plt.xlim([3, 4])
+# plt.show()

@@ -3,9 +3,9 @@ import numpy as np
 import numpy.typing as npt
 import scipy.signal as signal
 import matplotlib.pyplot as plt
-from state_space_half_car import Parameters
+from state_space_half_car import Parameters, half_car_state_space
 
-def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
+def solve(Np, x: npt.NDArray, wf: npt.NDArray, wb: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
     sigma = 6500 # [N]
     zmin = -1000
@@ -31,16 +31,22 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     model = Model('MPC controller')
     #model.Params.LogToConsole = 0
     
-    w_tilde = dict()
-    f_tilde = dict()
+    wf_tilde = dict()
+    ff_tilde = dict()
+    wb_tilde = dict()
+    fb_tilde = dict()
     for i in range(Np):
-        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]', lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
-        f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
+        wf_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'wf_tilde[{i}]', lb=wf[i, 0]-1e-8, ub=wf[i, 0]+1e-8)
+        wb_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'wb_tilde[{i}]', lb=wb[i, 0]-1e-8, ub=wb[i, 0]+1e-8)
+        ff_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'ff_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
+        fb_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'fb_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
 
     u_list = []
     for i in range(Np):
-        u_list.append([w_tilde[i]])
-        u_list.append([f_tilde[i]])
+        u_list.append([wf_tilde[i]])
+        u_list.append([wb_tilde[i]])
+        u_list.append([ff_tilde[i]])
+        u_list.append([fb_tilde[i]])
 
     u_tilde = MVar.fromlist(u_list)
 
@@ -69,69 +75,35 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     model.optimize()
 
     if model.status == GRB.OPTIMAL:
-        u = []
+        uf = []
+        ub = []
         for i in range(Np):
-            u.append(model.getVarByName(f'f_tilde[{i}]').X)
-        return u
+            uf.append(model.getVarByName(f'ff_tilde[{i}]').X)
+            ub.append(model.getVarByName(f'fb_tilde[{i}]').X)
+        return uf, ub
     
-def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDArray, wb: npt.NDArray):
-    #   state
-    #       1 zu-zr
-    #       2 zu'
-    #       3 zs-zu
-    #       4 zs'
-    #   input
-    #       1 zr
-    #       2 f
-    
-    Af = np.array([
-        [0, 1, 0, 0],
-        [-par.ktf/par.muf, -par.csf/par.muf, par.ksf/par.muf, par.csf/par.muf],
-        [0, -1, 0, 1],
-        [0, par.csf/par.ms, -par.ksf/par.ms, -par.csf/par.ms]
-    ])
+def half_car(par: Parameters, Np: int, dt: float, x:npt.NDArray, wfdot: npt.NDArray, wbdot: npt.NDArray):
+    # State space matrices
+    A, B, F, C, E = half_car_state_space(par)
 
-    Bf = np.array([
-        [0, 0],
-        [par.ktf/par.muf, par.ms/par.muf],
-        [0, 0],
-        [0, -1]
-    ])
+    B = np.concatenate((B, F))
 
-    Ab = np.array([
-        [0, 1, 0, 0], 
-        [-par.ktr/par.mur, -par.csr/par.mur, par.ksr/par.mur, par.csr/par.mur], 
-        [0, -1, 0, 1], 
-        [0, par.csr/par.ms, -par.ksr/par.ms, -par.csr/par.ms]
-    ])
+    ss = signal.cont2discrete((A, B, C, E), dt)
 
-    Bb = np.array([
-        [0, 0], 
-        [par.ktr/par.mur, par.ms/par.mur], 
-        [0, 0], 
-        [0 -1]
-    ])
+    A = ss[0]
+    B = ss[1]
 
-    ssf = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), dt)
-    ssb = signal.cont2discrete((Ab, Bb, np.eye(4), np.zeros((4, 2))), dt)
-
-    Af = ssf[0]
-    Bf = ssf[1]
-    Ab = ssb[0]
-    Bb = ssb[1]
-
-    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, np.eye(4), np.eye(2))
-    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, np.eye(4), np.eye(2))
+    uf, ub = solve(Np, x, wfdot, wbdot, A, B, np.eye(8), np.eye(4))
     return uf[0], ub[0]
 
-
-if __name__ == "__main__":
-    quarter_car(par = Parameters(960, 1222, 40, 45, 200000,
+    
+if __name__ == '__main__':
+    half_car(par = Parameters(960, 1222, 40, 45, 200000,
                     200000, 18000, 22000, 1000,
-                    1000, 1.3, 1.5),
-                Np=10, 
-                dt=0.01, 
-                x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
-                wfdot=np.zeros((10, 1)),
-                wbdot=np.zeros((10, 1))
-               )
+                    1000, 1.3, 1.5), 
+             Np=10, 
+             dt=0.01, 
+             x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
+             wfdot=np.zeros((10, 1)),
+             wbdot=np.zeros((10, 1))
+            )
