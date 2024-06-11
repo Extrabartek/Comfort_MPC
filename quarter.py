@@ -26,6 +26,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
     
     H = B_tilde.T @ Q_tilde @ B_tilde + R_tilde # checked
+    print(f"Hessian {H}")
     f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
 
     model = Model('MPC controller')
@@ -70,6 +71,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
     model.update()
     # model.write('model.lp')
     model.optimize()
+    print(model.ObjVal)
 
     if model.status == GRB.OPTIMAL:
         u = []
@@ -147,6 +149,11 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
 
     uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, Cf, Q, np.zeros((2, 2)))
     ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, Cb, Q, np.zeros((2, 2)))
+
+    xk = Af @ np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]) + Bf @ np.array([[wf[0, 0]], [uf[0]]])
+    cost = Cf @ xk
+    cost2 = cost[3, 0]
+    print(f"cost {cost2**2}")
     return uf[0], ub[0]
 
 
@@ -154,9 +161,9 @@ if __name__ == "__main__":
     quarter_car(par = Parameters(960, 1222, 40, 45, 200000,
                     200000, 18000, 22000, 1000,
                     1000, 1.3, 1.5),
-                Np=10, 
+                Np=1, 
                 dt=0.01, 
                 x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
-                wfdot=np.zeros((10, 1)),
-                wbdot=np.zeros((10, 1))
+                wf=np.zeros((1, 1)),
+                wb=np.zeros((1, 1))
                )
