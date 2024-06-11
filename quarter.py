@@ -15,18 +15,17 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
     n = A.shape[0]
     m = B.shape[1]
 
-    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) @ C for i in range(Np)])
+    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) for i in range(Np)])
     B_tilde = np.zeros((n*Np, m*Np))
     Q_tilde = np.zeros((n*Np, n*Np))
     R_tilde = np.zeros((m*Np, m*Np))
     for i in range(Np):
         for j in range(i+1):
-            B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j) @ B
+            B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j) @ B
         Q_tilde[i * n: (i + 1) * n, i * n: (i + 1) * n] = Q
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
     
     H = B_tilde.T @ Q_tilde @ B_tilde + R_tilde # checked
-    print(f"Hessian {H}")
     f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
 
     model = Model('MPC controller')
@@ -67,7 +66,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
                       - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
-    model.setObjective(obj, GRB.MINIMIZE)
+    model.setObjective(-obj, GRB.MAXIMIZE)
     model.update()
     # model.write('model.lp')
     model.optimize()
@@ -150,10 +149,6 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
     uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, Cf, Q, np.zeros((2, 2)))
     ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, Cb, Q, np.zeros((2, 2)))
 
-    xk = Af @ np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]) + Bf @ np.array([[wf[0, 0]], [uf[0]]])
-    cost = Cf @ xk
-    cost2 = cost[3, 0]
-    print(f"cost {cost2**2}")
     return uf[0], ub[0]
 
 
@@ -163,7 +158,7 @@ if __name__ == "__main__":
                     1000, 1.3, 1.5),
                 Np=1, 
                 dt=0.01, 
-                x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
+                x=np.array([[0], [2], [0], [0], [0], [0], [0], [0]]), 
                 wf=np.zeros((1, 1)),
                 wb=np.zeros((1, 1))
                )
