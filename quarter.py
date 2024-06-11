@@ -54,7 +54,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
         model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
         model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
         # Might need opposite to froce delta to 0
-        # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
+        ########### model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
         model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
                       - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - delta[i]))
         model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
@@ -86,12 +86,12 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
     #   input
     #       1 zr
     #       2 f
-    
+    dr = 0.7
     Af = np.array([
         [0, 1, 0, 0],
-        [-par.ktf/par.muf, -par.csf/par.muf, par.ksf/par.muf, par.csf/par.muf],
+        [-par.ktf/par.muf, -dr/par.muf, par.ksf/par.muf, dr/par.muf],
         [0, -1, 0, 1],
-        [0, par.csf/par.ms/2, -par.ksf/par.ms/2, -par.csf/par.ms/2]
+        [0, dr/par.ms/2, -par.ksf/par.ms/2, -dr/par.ms/2]
     ])
 
     Bf = np.array([
@@ -105,15 +105,15 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
-        [0, par.csf/par.ms/2, -par.ksf/par.ms/2, -par.csf/par.ms/2]])
+        [0, dr/par.ms/2, -par.ksf/par.ms/2, -dr/par.ms/2]])
 
     # Cf = np.eye(4)
 
     Ab = np.array([
         [0, 1, 0, 0], 
-        [-par.ktr/par.mur, -par.csr/par.mur, par.ksr/par.mur, par.csr/par.mur], 
+        [-par.ktr/par.mur, -dr/par.mur, par.ksr/par.mur, dr/par.mur], 
         [0, -1, 0, 1], 
-        [0, par.csr/par.ms/2, -par.ksr/par.ms/2, -par.csr/par.ms/2]
+        [0, dr/par.ms/2, -par.ksr/par.ms/2, -dr/par.ms/2]
     ])
 
     Bb = np.array([
@@ -127,7 +127,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
-        [0, par.csr/par.ms/2, -par.ksr/par.ms/2, -par.csr/par.ms/2]])
+        [0, dr/par.ms/2, -par.ksr/par.ms/2, -dr/par.ms/2]])
 
     # Cb = np.eye(4)
 
