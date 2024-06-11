@@ -85,7 +85,7 @@ for i in range(n):
     u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
     u = np.array([[u[0]], [u[1]]])
     # u = np.array([[0], [0]])
-    # calculate the derivative
+    # calculate the derivativec
     derivative = A @ state + B @ road_profile + F @ u
 
     # calculate the acceleration

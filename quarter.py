@@ -5,7 +5,7 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 from state_space_half_car import Parameters
 
-def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
+def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
     M = 1000
     sigma = 6500 # [N]
@@ -15,13 +15,13 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     n = A.shape[0]
     m = B.shape[1]
 
-    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) for i in range(Np)])
+    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) @ C for i in range(Np)])
     B_tilde = np.zeros((n*Np, m*Np))
     Q_tilde = np.zeros((n*Np, n*Np))
     R_tilde = np.zeros((m*Np, m*Np))
     for i in range(Np):
         for j in range(i+1):
-            B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j).dot(B)
+            B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j) @ B
         Q_tilde[i * n: (i + 1) * n, i * n: (i + 1) * n] = Q
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
     
@@ -29,7 +29,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
 
     model = Model('MPC controller')
-    model.Params.LogToConsole = 0
+    #model.Params.LogToConsole = 0
     
     w_tilde = dict()
     f_tilde = dict()
@@ -68,7 +68,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
     model.setObjective(obj, GRB.MINIMIZE)
     model.update()
-    model.write('model.lp')
+    # model.write('model.lp')
     model.optimize()
 
     if model.status == GRB.OPTIMAL:
@@ -101,11 +101,13 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, -1]
     ])
 
-    Qf = np.array([
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
+    Cf = np.array([
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
         [0, par.csf/par.ms, -par.ksf/par.ms, -par.csf/par.ms]])
+
+    # Cf = np.eye(4)
 
     Ab = np.array([
         [0, 1, 0, 0], 
@@ -121,22 +123,30 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, -1]
     ])
 
-    Qb = np.array([
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
+    Cb = np.array([
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
         [0, par.csr/par.ms, -par.ksr/par.ms, -par.csr/par.ms]])
 
-    ssf = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), dt)
-    ssb = signal.cont2discrete((Ab, Bb, np.eye(4), np.zeros((4, 2))), dt)
+    # Cb = np.eye(4)
+
+    Q = np.array([
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 1]])
+
+    ssf = signal.cont2discrete((Af, Bf, Cf, np.zeros((4, 2))), dt)
+    ssb = signal.cont2discrete((Ab, Bb, Cb, np.zeros((4, 2))), dt)
 
     Af = ssf[0]
     Bf = ssf[1]
     Ab = ssb[0]
     Bb = ssb[1]
 
-    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, Qf, np.zeros((2, 2)))
-    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, Qb, np.zeros((2, 2)))
+    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, Cf, Q, np.zeros((2, 2)))
+    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, Cb, Q, np.zeros((2, 2)))
     return uf[0], ub[0]
 
 
