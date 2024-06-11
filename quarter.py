@@ -29,10 +29,11 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
 
     model = Model('MPC controller')
-    #model.Params.LogToConsole = 0
+    model.Params.LogToConsole = 0
     
     w_tilde = dict()
     f_tilde = dict()
+    w = np.reshape(w, (Np, 1))
     for i in range(Np):
         w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]', lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
         f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
