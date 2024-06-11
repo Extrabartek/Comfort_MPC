@@ -4,6 +4,19 @@ from scipy.signal import freqresp
 from scipy.signal import TransferFunction as tf
 import matplotlib.pyplot as plt
 
+def rms(a_z) -> np.float32:
+    '''Root mean square'''
+    # Calculate the integral for the RMS calculation
+    RMS = np.sqrt(np.mean(a_z**2))
+    return RMS
+
+def rmq(a_z) -> np.float32:
+    '''Root mean quartic'''
+    # Calculate the integral for the RMQ calculation
+    RMQ = (np.mean(a_z**4))**(1/4)
+    return RMQ
+
+
 def get_a_w(a_z):
     '''Get the weighted acceleration in the time domain using the frequency response of the weight filter'''
     # Define the frequency points
@@ -15,7 +28,7 @@ def get_a_w(a_z):
     Wv = tf([87.72, 1138, 11336, 5452, 5509], [1, 92.6854, 2549.83, 25969, 81057, 79783])
 
     # Calculate magnitude and phase
-    _, magWeightVertical = freqresp(Wv, w)
+    w, magWeightVertical = freqresp(Wv, w)
 
     # Compute the FFT of the input acceleration
     A_f = fft(a_z)
@@ -26,36 +39,23 @@ def get_a_w(a_z):
     # Inverse FFT to get weighted acceleration in time domain
     a_w = np.real(ifft(A_w_f))
     
-    return a_w
+    return a_w, w
 
 
 def wrms(ts, a_z) -> np.float32:
-    '''Weighted root mean square'''
-    # Define the time step
-    dt = ts[1] - ts[0]
+    '''Weighted root mean square'''    
     
-    a_w = get_a_w(a_z)
-
+    a_w,_ = get_a_w(a_z)
     # Compute the integral for the WRMS calculation
-    integral = np.sum((a_w ** 2) * ts)
-
-    # Calculate WRMS
-    WRMS = np.sqrt(1 / np.sum(ts) * integral)
+    WRMS = rms(a_w)
 
     return WRMS
 
 def wrmq(a_z, ts) -> np.float32:
     '''Weighted root mean quartic'''
     # Define the time step
-    dt = ts[1] - ts[0]
-
-    a_w = get_a_w(a_z)
-
-    # Compute the integral for the WRMS calculation
-    integral = np.sum((np.power(a_w,4)) * dt)
-
-    # Calculate WRMS
-    WRMQ = ((1 / np.sum(ts)) * integral)**(1/4)
+    a_w,_ = get_a_w(a_z)
+    WRMQ = rmq(a_w)
 
     return WRMQ
 
@@ -63,7 +63,7 @@ def rwrms(a_z, ts) -> np.ndarray:
     '''Running weighted root mean square'''
     dt = ts[1] - ts[0]
     
-    a_w = get_a_w(a_z)
+    a_w,_ = get_a_w(a_z)
     
     rwrms = np.zeros_like(a_w)
     
@@ -72,7 +72,11 @@ def rwrms(a_z, ts) -> np.ndarray:
     t_sum = np.cumsum(ts)
     
     for i in range(2, len(a_w)):
-        rwrms[i] = np.sqrt((1/t_sum[i])*(t_sum[i-1]*rwrms[i-1]**2 + (a_w[i]**2)*dt))
+        
+        # T = t_sum[i]
+        # T_prev = t_sum[i-1]
+        # rwrms[i] = (1/np.sqrt(T)) * np.sqrt(T_prev * rwrms[i-1]**2 + a_w[i]**2 * dt)
+        rwrms[i] = wrms(ts[:i], a_z[:i])
         
     return rwrms
     
@@ -80,9 +84,9 @@ def vdv(a_z, ts) -> np.float32:
     '''Vibration dose value'''
     dt = ts[1] - ts[0]
 
-    a_w = get_a_w(a_z)
+    a_w,_ = get_a_w(a_z)
     
-    vdv = (np.sum(np.power(a_w, 4) * dt))**(1/4)
+    vdv = (np.sum(np.power(a_w, 4))*dt)**(1/4)
     
     return vdv
 
@@ -93,26 +97,51 @@ def mtvv(rwrms_vals) -> np.ndarray:
         mtvv[i] = np.max(rwrms_vals[:i])
     return mtvv
 
+def plot_spectrum_comparison(a_z):
+    a_w, w = get_a_w(a_z)
+    A_z = fft(a_z)
+    A_w = fft(a_w)
+    
+    plt.figure()
+    plt.plot(w, np.abs(A_z), label='Input')
+    plt.plot(w, np.abs(A_w), label='Weighted')
+    plt.xlabel('Frequency [rad/s]')
+    plt.ylabel('Magnitude')
+    plt.title('Input and Weighted Acceleration in Frequency Domain')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def plot_acceleration_comparison(ts, a_z):
+    '''Plot the input and weighted acceleration in the time domain'''
+    a_w, w = get_a_w(a_z)
+    
+    plt.figure()
+    plt.plot(ts, a_z, label='Input')
+    plt.plot(ts, a_w, label='Weighted')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.title('Input and Weighted Acceleration in Time Domain')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
 if __name__ == "__main__":
     START_TIME = 0
-    END_TIME = 10
-    FREQ = 100 # Hz
-    dt = 1 / FREQ
+    END_TIME = 0.25 # s
+    SAMPLING_FREQ = 1000 # Hz
+    dt = 1 / SAMPLING_FREQ
     ts = np.linspace(START_TIME, END_TIME, int((END_TIME - START_TIME) / dt))
     num_samples = len(ts)
     print(f"Number of samples: {num_samples}")
+    g = 9.81 # m/s^2
+    w = 40 # rad/s
     
-    a_z = np.sin(2 * np.pi * ts) + np.random.normal(0, 0.1, len(ts))
+    a_z = np.exp(-w*ts)*(0.3*g)*np.sin(2*np.pi*w*ts)
     
-    # plot the input acceleration
-    
-    plt.figure()
-    plt.plot(ts, a_z)
-    plt.xlabel('Time [s]')
-    plt.ylabel('Acceleration [m/s^2]')
-    plt.title('Input Acceleration')
-    plt.grid(True)
-    plt.show()
+    plot_acceleration_comparison(ts, a_z)
+        
+    plot_spectrum_comparison(a_z)
     
     # print the float metrics
     
@@ -123,7 +152,7 @@ if __name__ == "__main__":
     # plot the running metrics
     
     rwrms_vals = rwrms(a_z, ts)
-    
+        
     plt.figure()
     plt.plot(ts, rwrms_vals)
     plt.xlabel('Time [s]')

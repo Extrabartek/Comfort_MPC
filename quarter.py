@@ -7,9 +7,9 @@ from state_space_half_car import Parameters
 
 def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
+    M = 1000
     sigma = 6500 # [N]
-    zmin = -1000
-    zmax = 1000
+    kappa = 7000 # [Ns/m]
 
     # Number of states (n) and inputs (m) and constraints (ncon)
     n = A.shape[0]
@@ -29,13 +29,14 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
 
     model = Model('MPC controller')
-    #model.Params.LogToConsole = 0
+    model.Params.LogToConsole = 0
     
     w_tilde = dict()
     f_tilde = dict()
+    w = np.reshape(w, (Np, 1))
     for i in range(Np):
-        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]')#, lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
-        f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]')#, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]', lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
+        f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
 
     u_list = []
     for i in range(Np):
@@ -46,21 +47,23 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
 
     delta = dict()
     for i in range(Np):
-        delta[i] = model.addVar(vtype=GRB.BINARY, name='delta_v[{}]'.format(i))
+        delta[i] = model.addVar(vtype=GRB.BINARY, name='delta[{}]'.format(i))
 
     model.update()
     for i in range(Np):
         model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
         model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
         # Might need opposite to froce delta to 0
-        model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
-        model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                               - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m], 
-                                                 GRB.GREATER_EQUAL, 0)
-        model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] <= zmax * (1 - delta[i]))
-        model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] >= (zmin-1e-8) * delta[i] - 1e-8)
+        # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
+        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - delta[i]))
+        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
+        model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
+        model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
+        model.addConstr(u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i](u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
     model.setObjective(obj, GRB.MINIMIZE)
@@ -69,12 +72,12 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     model.optimize()
 
     if model.status == GRB.OPTIMAL:
-        xk = []
+        u = []
         for i in range(Np):
-            xk.append(model.getVarByName(f'f_tilde[{i}]').X)
-        return xk
+            u.append(model.getVarByName(f'f_tilde[{i}]').X)
+        return u
     
-def quarter_car(par: Parameters):
+def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDArray, wb: npt.NDArray):
     #   state
     #       1 zu-zr
     #       2 zu'
@@ -98,34 +101,40 @@ def quarter_car(par: Parameters):
         [0, -1]
     ])
 
-    ss = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), 1)
+    Ab = np.array([
+        [0, 1, 0, 0], 
+        [-par.ktr/par.mur, -par.csr/par.mur, par.ksr/par.mur, par.csr/par.mur], 
+        [0, -1, 0, 1], 
+        [0, par.csr/par.ms, -par.ksr/par.ms, -par.csr/par.ms]
+    ])
 
-    Af = ss[0]
-    Bf = ss[1]
+    Bb = np.array([
+        [0, 0], 
+        [par.ktr/par.mur, par.ms/par.mur], 
+        [0, 0], 
+        [0, -1]
+    ])
 
-    uk = solve(10, np.array([[0], [0.1], [0], [0.1]]), np.ones((10, 1))*0.0001, Af, Bf, np.eye(4), np.eye(2))
+    ssf = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), dt)
+    ssb = signal.cont2discrete((Ab, Bb, np.eye(4), np.zeros((4, 2))), dt)
 
-# A = np.array([[1, 0.1], [0, 1]])
-# B = np.array([[0], [0.1]])
-# Q = np.eye(2)
-# R = np.array([1])
-# x = np.array([[10], [0]])
-# x1result = []
-# x2result = []
-# uresult = []
-# for _ in range(160):
-#     uk = solve(10, x, np.zeros(1), A, B, Q, R)
-#     x = A@x + B*uk
-#     x1result.append(x[0])
-#     x2result.append(x[1])
-#     uresult.append(uk)
+    Af = ssf[0]
+    Bf = ssf[1]
+    Ab = ssb[0]
+    Bb = ssb[1]
 
-# plt.plot(x1result)
-# plt.plot(x2result)
-# plt.plot(uresult)
-# plt.grid()
-# plt.show()
+    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, np.eye(4), np.eye(2))
+    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, np.eye(4), np.eye(2))
+    return uf[0], ub[0]
 
-quarter_car(par = Parameters(960, 1222, 40, 45, 200000,
-                 200000, 18000, 22000, 1000,
-                 1000, 1.3, 1.5))
+
+if __name__ == "__main__":
+    quarter_car(par = Parameters(960, 1222, 40, 45, 200000,
+                    200000, 18000, 22000, 1000,
+                    1000, 1.3, 1.5),
+                Np=10, 
+                dt=0.01, 
+                x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
+                wfdot=np.zeros((10, 1)),
+                wbdot=np.zeros((10, 1))
+               )
