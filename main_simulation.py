@@ -82,9 +82,9 @@ for i in range(n):
             prediction_road_profile[j] = np.array([road_profile_front[index], road_profile_rear[index]])
 
     # solve for the control input
-    # u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
-    # u = np.array([[u[0]], [u[1]]])
-    u = np.array([[0], [0]])
+    u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    u = np.array([[u[0]], [u[1]]])
+    # u = np.array([[0], [0]])
     # calculate the derivative
     derivative = A @ state + B @ road_profile + F @ u
 

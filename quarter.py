@@ -62,7 +62,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
         model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
         model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
         model.addConstr(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i](u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i]*(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
                       - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
@@ -101,6 +101,12 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, -1]
     ])
 
+    Qf = np.array([
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, par.csf/par.ms, -par.ksf/par.ms, -par.csf/par.ms]])
+
     Ab = np.array([
         [0, 1, 0, 0], 
         [-par.ktr/par.mur, -par.csr/par.mur, par.ksr/par.mur, par.csr/par.mur], 
@@ -115,6 +121,12 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, -1]
     ])
 
+    Qb = np.array([
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, par.csr/par.ms, -par.ksr/par.ms, -par.csr/par.ms]])
+
     ssf = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), dt)
     ssb = signal.cont2discrete((Ab, Bb, np.eye(4), np.zeros((4, 2))), dt)
 
@@ -123,8 +135,8 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
     Ab = ssb[0]
     Bb = ssb[1]
 
-    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, np.eye(4), np.eye(2))
-    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, np.eye(4), np.eye(2))
+    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, Qf, np.zeros((2, 2)))
+    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, Qb, np.zeros((2, 2)))
     return uf[0], ub[0]
 
 

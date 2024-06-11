@@ -85,11 +85,11 @@ def solve(Np, x: npt.NDArray, wf: npt.NDArray, wb: npt.NDArray, A: npt.NDArray, 
         
         # Constraint forcing power -> Front
         model.addConstr(u_tilde[i*4 + 2, 0] - kappa * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltaf[i](u_tilde[i*4 + 2, 0] - kappa * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltaf[i]*(u_tilde[i*4 + 2, 0] - kappa * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
                       - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
         # Constraint forcing power -> Rear
         model.addConstr(u_tilde[i*4 + 3, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltar[i](u_tilde[i*4 + 3, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltar[i]*(u_tilde[i*4 + 3, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
                       - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
