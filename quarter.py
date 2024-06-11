@@ -34,8 +34,8 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
     w_tilde = dict()
     f_tilde = dict()
     for i in range(Np):
-        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]')#, lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
-        f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]')#, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]', lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
+        f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
 
     u_list = []
     for i in range(Np):
@@ -74,7 +74,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
             xk.append(model.getVarByName(f'f_tilde[{i}]').X)
         return xk
     
-def quarter_car(par: Parameters):
+def quarter_car(par: Parameters, dt: float):
     #   state
     #       1 zu-zr
     #       2 zu'
@@ -98,7 +98,7 @@ def quarter_car(par: Parameters):
         [0, -1]
     ])
 
-    ss = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), 1)
+    ss = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), dt)
 
     Af = ss[0]
     Bf = ss[1]
