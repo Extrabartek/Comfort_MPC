@@ -22,7 +22,7 @@ class Parameters:
         self.a3 = 1 / self.ms + (self.l2 ** 2) / self.I
 
 
-def half_car_state_space(par: Parameters, q_1: float, q_2: float):
+def half_car_state_space(par: Parameters):
     A = np.array([[0, 1, 0, 0, 0, -1, 0, 0],
                   [-par.ksf * par.a1, -par.csf * par.a1, -par.ksr * par.a2, -par.csr * par.a2, 0, par.csf * par.a1, 0,
                    par.csr * par.a2],
@@ -38,8 +38,8 @@ def half_car_state_space(par: Parameters, q_1: float, q_2: float):
     F = np.array([[0, par.a1, 0, par.a2, 0, -1 / par.muf, 0, 0],
                   [0, par.a2, 0, par.a3, 0, 0, 0, -1 / par.mur]]).T
 
-    Q = np.array([[q_1, 0],
-                  [0, q_2]])
+    Q = np.array([[1, 0],
+                  [0, 1]])
 
     C1_dash = np.array([[1 / par.ms * -par.ksf, 1 / par.ms * -par.csf, 1 / par.ms * -par.ksr, 1 / par.ms * -par.csr, 0,
                          1 / par.ms * par.csf, 0, 1 / par.ms * par.csr],
