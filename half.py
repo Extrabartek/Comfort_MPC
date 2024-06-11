@@ -58,30 +58,39 @@ def solve(Np, x: npt.NDArray, wf: npt.NDArray, wb: npt.NDArray, A: npt.NDArray, 
 
     model.update()
     for i in range(Np):
-        model.addConstr(u_tilde[i*2 + 2, 0] <= sigma)
-        model.addConstr(u_tilde[i*2 + 2, 0] >= -sigma)
-        model.addConstr(u_tilde[i*2 + 3, 0] <= sigma)
-        model.addConstr(u_tilde[i*2 + 3, 0] >= -sigma)
+        model.addConstr(u_tilde[i*4 + 2, 0] <= sigma)
+        model.addConstr(u_tilde[i*4 + 2, 0] >= -sigma)
+        model.addConstr(u_tilde[i*4 + 3, 0] <= sigma)
+        model.addConstr(u_tilde[i*4 + 3, 0] >= -sigma)
         # Might need opposite to froce delta to 0
         # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
+        
+        # Front -> map to binary
+        model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - deltaf[i]))
+        model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * deltaf[i])
+        # Rear -> map to binary
         model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - deltaf[i]))
+                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - deltar[i]))
         model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * deltaf[i])
-        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - deltar[i]))
-        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * deltar[i])
-        model.addGenConstrIndicator(deltaf[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
-        model.addGenConstrIndicator(deltaf[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
-        model.addGenConstrIndicator(deltar[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
-        model.addGenConstrIndicator(deltar[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
+                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * deltar[i])
+        
+        # Indicator -> Front
+        model.addGenConstrIndicator(deltaf[i], 1, u_tilde[i*4 + 2, 0], GRB.GREATER_EQUAL, 1e-8)
+        model.addGenConstrIndicator(deltaf[i], 0, u_tilde[i*4 + 2, 0], GRB.LESS_EQUAL, 0)
+        # Indicator -> Rear
+        model.addGenConstrIndicator(deltar[i], 1, u_tilde[i*4 + 3, 0], GRB.GREATER_EQUAL, 1e-8)
+        model.addGenConstrIndicator(deltar[i], 0, u_tilde[i*4 + 3, 0], GRB.LESS_EQUAL, 0)
+        
+        # Constraint forcing power -> Front
+        model.addConstr(u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltaf[i](u_tilde[i*4, 0] - kappa * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
+        # Constraint forcing power -> Rear
         model.addConstr(u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltaf[i](u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
-        model.addConstr(u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltar[i](u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
+                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*deltar[i](u_tilde[i*4 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
     model.setObjective(obj, GRB.MINIMIZE)
