@@ -93,7 +93,7 @@ def isolatedTable(f, V, l, endTime):
     return heightProfile
 
 
-def isoRoad(f, V, t) -> None:
+def isoRoad(f, V, t) -> list[float]:
     # Road profile generation based on ISO norm
     np.random.seed(20)
     
@@ -123,13 +123,36 @@ def isoRoad(f, V, t) -> None:
     
     return heightProfile
 
+
+def isolatedCircle(f, V, endTime) -> list[float]:
+
+    tValues = np.arange(0,endTime+1/f,1/f) # [s] Array of to be evaluated timestamps
+    heightProfile = np.zeros(len(tValues))
+    
+    r = 0.09                   # radius of the circular bump in meter
+    l = 20                      # location of the bump
+
+    for idx in range(len(tValues)):
+        
+        t = tValues[idx]
+
+        if ((l - r) / V <= t) and (t <= (l + r) / V):
+            height = np.sqrt(r**2 - (t * V - l)**2)
+        else:
+            height = 0    
+
+        heightProfile[idx] = height
+
+    return heightProfile 
+
+
 if __name__ == "__main__":
 
     ## Time init
-    f = 100            # Hz
+    f = 1000            # Hz
 
     ## Tunable parameters (dependent on bump surface)
-    A = 0.3            # m
+    A = 0.3            # mS
     V = 36 / 3.6       # km/h
     l = 10             # m
     L = 10             # m
@@ -137,15 +160,16 @@ if __name__ == "__main__":
     ## Generate profile
     profileBump = isolatedBump(f, A, V, l, L, 10)
     profileTable = isolatedTable(f, V, l, 10)
-    profileISO = isoRoad(f, V, 10)
-
+    # profileISO = isoRoad(f, V, 10)
+    profileCircle = isolatedCircle(f, V, 10)
+    
     profileTime = np.arange(0, 10 + 1/f, 1/f)
     # profile = [profileBump, profileTable];
     # profileTime = [tValues, tValues + tValues(end)];
 
     # Post processing
 
-    plt.plot(profileTime, profileTable, '-o')
+    plt.plot(profileTime, profileCircle, '-o')
     # ylim([0, ceil(A)])
     plt.ylabel('Height [m]')
     plt.xlabel('time [s]')
