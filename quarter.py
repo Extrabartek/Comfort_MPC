@@ -29,7 +29,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
     f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
 
     model = Model('MPC controller')
-    #model.Params.LogToConsole = 0
+    model.Params.LogToConsole = 0
     
     w_tilde = dict()
     f_tilde = dict()
@@ -91,7 +91,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 1, 0, 0],
         [-par.ktf/par.muf, -par.csf/par.muf, par.ksf/par.muf, par.csf/par.muf],
         [0, -1, 0, 1],
-        [0, par.csf/par.ms, -par.ksf/par.ms, -par.csf/par.ms]
+        [0, par.csf/par.ms/2, -par.ksf/par.ms/2, -par.csf/par.ms/2]
     ])
 
     Bf = np.array([
@@ -105,7 +105,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
-        [0, par.csf/par.ms, -par.ksf/par.ms, -par.csf/par.ms]])
+        [0, par.csf/par.ms/2, -par.ksf/par.ms/2, -par.csf/par.ms/2]])
 
     # Cf = np.eye(4)
 
@@ -113,7 +113,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 1, 0, 0], 
         [-par.ktr/par.mur, -par.csr/par.mur, par.ksr/par.mur, par.csr/par.mur], 
         [0, -1, 0, 1], 
-        [0, par.csr/par.ms, -par.ksr/par.ms, -par.csr/par.ms]
+        [0, par.csr/par.ms/2, -par.ksr/par.ms/2, -par.csr/par.ms/2]
     ])
 
     Bb = np.array([
@@ -127,7 +127,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
-        [0, par.csr/par.ms, -par.ksr/par.ms, -par.csr/par.ms]])
+        [0, par.csr/par.ms/2, -par.ksr/par.ms/2, -par.csr/par.ms/2]])
 
     # Cb = np.eye(4)
 
