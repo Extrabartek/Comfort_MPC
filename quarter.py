@@ -7,9 +7,9 @@ from state_space_half_car import Parameters
 
 def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
+    M = 1000
     sigma = 6500 # [N]
-    zmin = -1000
-    zmax = 1000
+    kappa = 7000 # [Ns/m]
 
     # Number of states (n) and inputs (m) and constraints (ncon)
     n = A.shape[0]
@@ -46,21 +46,23 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, Q:
 
     delta = dict()
     for i in range(Np):
-        delta[i] = model.addVar(vtype=GRB.BINARY, name='delta_v[{}]'.format(i))
+        delta[i] = model.addVar(vtype=GRB.BINARY, name='delta[{}]'.format(i))
 
     model.update()
     for i in range(Np):
         model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
         model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
         # Might need opposite to froce delta to 0
-        model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
-        model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                               - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m], 
-                                                 GRB.GREATER_EQUAL, 0)
-        model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] <= zmax * (1 - delta[i]))
-        model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] >= (zmin-1e-8) * delta[i] - 1e-8)
+        # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
+        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - delta[i]))
+        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
+        model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
+        model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
+        model.addConstr(u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i](u_tilde[i*2, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
     model.setObjective(obj, GRB.MINIMIZE)
@@ -109,7 +111,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDAr
         [0, 0], 
         [par.ktr/par.mur, par.ms/par.mur], 
         [0, 0], 
-        [0 -1]
+        [0, -1]
     ])
 
     ssf = signal.cont2discrete((Af, Bf, np.eye(4), np.zeros((4, 2))), dt)
