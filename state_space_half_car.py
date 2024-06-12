@@ -18,7 +18,7 @@ class Parameters:
         self.l1 = front_body_length
         self.l2 = rear_body_length
         self.a1 = 1 / self.ms + (self.l1 ** 2) / self.I
-        self.a2 = 1 / self.ms + (self.l1 * self.l2) / self.I
+        self.a2 = 1 / self.ms - (self.l1 * self.l2) / self.I
         self.a3 = 1 / self.ms + (self.l2 ** 2) / self.I
 
 
@@ -50,6 +50,7 @@ def half_car_state_space(par: Parameters):
     C = np.dot(Q, C1_dash)
     E = np.dot(Q, np.array([[1 / par.ms, 1 / par.ms],
                             [-par.l1 / par.I, par.l2 / par.I]]))
+
 
     return [A, B, F, C, E]
 

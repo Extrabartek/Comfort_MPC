@@ -24,13 +24,13 @@ state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time init
 f = 1000  # Hz
-endTime = 0.3  # s
+endTime = 3  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 V = 25 / 3.6  # velocity of the car [m/s]
-tl = 0.01  # time of the bump [s]
+tl = 0.00  # time of the bump [s]
 l = tl * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
 
@@ -60,6 +60,7 @@ n = len(tValues)  # number of samples
 state_history = np.zeros((n, 8, 1))  # state history
 derivative_history = np.zeros((n, 8, 1))  # derivative history
 acceleration_history = np.zeros((n, 2, 1))  # acceleration history
+u_history = np.zeros((n, 2, 1))  # control input history
 
 # generate road profile derivatives
 road_profile_derivative_front = np.gradient(road_profile_front, dt)
@@ -70,8 +71,8 @@ A, B, F, C, E = half_car_state_space(par)
 
 for i in range(n):
     # create the road profile based on the derivative
-    road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
-
+    # road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
+    road_profile = np.array([[0], [0]])
     # create the road profile for the prediction horizon
     prediction_road_profile = np.zeros((Np, 2))
     for j in range(Np):
@@ -82,14 +83,17 @@ for i in range(n):
             prediction_road_profile[j] = np.array([road_profile_front[index], road_profile_rear[index]])
 
     # solve for the control input
-    u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
-    u = np.array([[u[0]], [u[1]]])
-    # u = np.array([[0], [0]])
+    # u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    # u = dt_prediction/dt * np.array([[u[0]], [u[1]]])
+    u = np.array([[1000], [1000]])
+
+    # if i is 10:
+    #     u = np.array([[1000], [1000]])
     # calculate the derivativec
     derivative = A @ state + B @ road_profile + F @ u
 
     # calculate the acceleration
-    acceleration = C @ state + E @ road_profile
+    acceleration = C @ state + E @ u
 
     # update the state
     state = state + dt * derivative
@@ -98,29 +102,35 @@ for i in range(n):
     state_history[i] = state
     derivative_history[i] = derivative
     acceleration_history[i] = acceleration
+    u_history[i] = u
     print(f"Step {i} of {n}")
 
 # create seperated sub-figures for the acceleration, the state and the road profile
 
 plt.figure(figsize=(15, 15))
-plt.subplot(3, 1, 1)
+plt.subplot(4, 1, 1)
 plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
 plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
-plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
+# plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
+# plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
 plt.legend()
 
-plt.subplot(3, 1, 2)
+plt.subplot(4, 1, 2)
 plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
 plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
 plt.legend()
 
-plt.subplot(3, 1, 3)
+plt.subplot(4, 1, 3)
 plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
 plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
-plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
-plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
+# plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
+# plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
 plt.legend()
+
+plt.subplot(4, 1, 4)
+plt.plot(tValues, u_history[:, 0], label='Front control input')
+plt.plot(tValues, u_history[:, 1], label='Rear control input')
+
 
 # plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
 # plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
