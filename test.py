@@ -28,13 +28,13 @@ state_passive = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]
 
 # Time init
 f = 1000  # Hz
-endTime = 0.15  # s
+endTime = 0.3  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 V = 25 / 3.6  # velocity of the car [m/s]
-tl = 0.05  # time of the bump [s]
+tl = 0.1  # time of the bump [s]
 l = tl * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
 
@@ -58,7 +58,7 @@ for i in range(len(road_profile_rear)):
 # The simulation loop
 
 dt = 1 / f  # time step [s]
-Np = 25  # length of the prediction horizon in points
+Np = 10  # length of the prediction horizon in points
 t_prediction = 0.05  # length of the prediction horizon in seconds
 dt_prediction = t_prediction / Np  # time step of the prediction horizon [s]
 n = len(tValues)  # number of samples
