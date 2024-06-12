@@ -148,8 +148,8 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Cr = ssr[2]
     Dr = ssr[3]
 
-    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wfdot, Af, Bf, Cf, Df, Q, R)
-    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wrdot, Ar, Br, Cr, Dr, Q, R)
+    uf = solve(Np, np.array([[x[0, 0]], [x[4, 0]], [x[1, 0]], [x[5, 0]]]), wfdot, Af, Bf, Cf, Df, Q, R)
+    ub = solve(Np, np.array([[x[2, 0]], [x[6, 0]], [x[3, 0]], [x[7, 0]]]), wrdot, Ar, Br, Cr, Dr, Q, R)
     return uf[0], ub[0]
 
 
