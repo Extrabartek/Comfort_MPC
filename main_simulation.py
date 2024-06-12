@@ -24,7 +24,7 @@ state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time init
 f = 1000  # Hz
-endTime = 3  # s
+endTime = 5  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
@@ -80,13 +80,13 @@ for i in range(n):
         if index >= len(tValues):
             prediction_road_profile[j] = np.array([0, 0])
         else:
-            prediction_road_profile[j] = np.array([road_profile_front[index], road_profile_rear[index]])
+            prediction_road_profile[j] = np.array([road_profile_derivative_front[index], road_profile_derivative_rear[index]])
 
     # solve for the control input
     # u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
     # u = dt_prediction/dt * np.array([[u[0]], [u[1]]])
-    u = np.array([[1000], [1000]])
-
+    # u = np.array([[u[0]], [u[1]]])
+    u = np.array([[-100], [-100]])
     # if i is 10:
     #     u = np.array([[1000], [1000]])
     # calculate the derivativec
@@ -110,8 +110,8 @@ for i in range(n):
 plt.figure(figsize=(15, 15))
 plt.subplot(4, 1, 1)
 plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
-plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-# plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
+# plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
+plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
 # plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
 plt.legend()
 
@@ -122,8 +122,8 @@ plt.legend()
 
 plt.subplot(4, 1, 3)
 plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
-plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
-# plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
+# plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
+plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
 # plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
 plt.legend()
 
