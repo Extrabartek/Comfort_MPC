@@ -5,7 +5,7 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 from state_space_half_car import Parameters
 
-def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
+def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, D: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
     M = 1000
     sigma = 6500 # [N]
@@ -14,19 +14,26 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
     # Number of states (n) and inputs (m) and constraints (ncon)
     n = A.shape[0]
     m = B.shape[1]
+    ncon = C.shape[0]
 
-    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) @ C for i in range(Np)])
-    B_tilde = np.zeros((n*Np, m*Np))
-    Q_tilde = np.zeros((n*Np, n*Np))
+    A_c_tilde = np.vstack([C @ np.linalg.matrix_power(A, i) for i in range(Np)])
+    B_c_tilde = np.zeros((ncon*Np, m*Np))
+    D_tilde = np.zeros((ncon*Np, m*Np))
+    Q_tilde = np.zeros((ncon*Np, ncon*Np))
     R_tilde = np.zeros((m*Np, m*Np))
     for i in range(Np):
         for j in range(i+1):
-            B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j) @ B
-        Q_tilde[i * n: (i + 1) * n, i * n: (i + 1) * n] = Q
+            if i-j <= 0:
+                B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = np.zeros((ncon, m))
+            else:
+                B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j-1) @ B
+        D_tilde[i * ncon: (i + 1) * ncon, i * m: (i + 1) * m] = D
+        Q_tilde[i * ncon: (i + 1) * ncon, i * ncon: (i + 1) * ncon] = Q
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
-    
-    H = B_tilde.T @ Q_tilde @ B_tilde + R_tilde # checked
-    f = 2 * x.T @ A_tilde.T @ Q_tilde @ B_tilde # checked
+
+    B_c_tilde = B_c_tilde + D_tilde
+    H = B_c_tilde.T @ Q_tilde @ B_c_tilde + R_tilde # checked
+    f = 2 * x.T @ A_c_tilde.T @ Q_tilde @ B_c_tilde # checked
 
     model = Model('MPC controller')
     model.Params.LogToConsole = 0
@@ -50,20 +57,20 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
         delta[i] = model.addVar(vtype=GRB.BINARY, name='delta[{}]'.format(i))
 
     model.update()
-    for i in range(Np):
-        model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
-        model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
-        # Might need opposite to froce delta to 0
-        # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
-        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - delta[i]))
-        model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
-        model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
-        model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
-        model.addConstr(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i]*(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
+    # for i in range(Np):
+    #     model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
+    #     model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
+    #     # Might need opposite to froce delta to 0
+    #     # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
+    #     model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - delta[i]))
+    #     model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
+    #     model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
+    #     model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
+    #     model.addConstr(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i]*(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
+    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
     model.setObjective(obj, GRB.MINIMIZE)
@@ -77,76 +84,72 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
             u.append(model.getVarByName(f'f_tilde[{i}]').X)
         return u
     
-def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wf: npt.NDArray, wb: npt.NDArray):
+def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray):
     #   state
-    #       1 zu-zr
-    #       2 zu'
-    #       3 zs-zu
-    #       4 zs'
+    #       1 zs-zu
+    #       2 zu - zr
+    #       3 zs'
+    #       4 zu'
     #   input
-    #       1 zr
+    #       1 zr'
     #       2 f
     
     Af = np.array([
-        [0, 1, 0, 0],
-        [-par.ktf/par.muf, -par.csf/par.muf, par.ksf/par.muf, par.csf/par.muf],
-        [0, -1, 0, 1],
-        [0, par.csf/par.ms/2, -par.ksf/par.ms/2, -par.csf/par.ms/2]
+        [0, 0, 1, -1],
+        [0, 0, 0, 1],
+        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
+        [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
     ])
 
     Bf = np.array([
         [0, 0],
-        [par.ktf/par.muf, par.ms/par.muf],
-        [0, 0],
-        [0, -1]
+        [-1, 0],
+        [0, -1/(par.ms/2)],
+        [0, 1/par.muf]
     ])
 
     Cf = np.array([
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, par.csf/par.ms/2, -par.ksf/par.ms/2, -par.csf/par.ms/2]])
+        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
+    
+    Df = np.array([[0, 1/(par.ms/2)]])
 
-    # Cf = np.eye(4)
-
-    Ab = np.array([
-        [0, 1, 0, 0], 
-        [-par.ktr/par.mur, -par.csr/par.mur, par.ksr/par.mur, par.csr/par.mur], 
-        [0, -1, 0, 1], 
-        [0, par.csr/par.ms/2, -par.ksr/par.ms/2, -par.csr/par.ms/2]
+    Ar = np.array([
+        [0, 0, 1, -1],
+        [0, 0, 0, 1],
+        [-par.ksr/(par.ms/2), 0, -par.csr/(par.ms/2), par.csr/(par.ms/2)],
+        [par.ksr/par.mur, -par.ktr/par.mur, par.csr/par.mur, -par.csr/par.mur]
     ])
 
-    Bb = np.array([
-        [0, 0], 
-        [par.ktr/par.mur, par.ms/par.mur], 
-        [0, 0], 
-        [0, -1]
+    Br = np.array([
+        [0, 0],
+        [-1, 0],
+        [0, -1/(par.ms/2)],
+        [0, 1/par.mur]
     ])
 
-    Cb = np.array([
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, par.csr/par.ms/2, -par.ksr/par.ms/2, -par.csr/par.ms/2]])
+    Cr = np.array([
+        [-par.ksr/(par.ms/2), 0, -par.csr/(par.ms/2), par.csr/(par.ms/2)]])
+    
+    Dr = np.array([[0, 1/(par.ms/2)]])
 
-    # Cb = np.eye(4)
+    Q = np.array([[1]])
 
-    Q = np.array([
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 1]])
+    R = np.array([[0, 0], [0, 0]])
 
-    ssf = signal.cont2discrete((Af, Bf, Cf, np.zeros((4, 2))), dt)
-    ssb = signal.cont2discrete((Ab, Bb, Cb, np.zeros((4, 2))), dt)
+    ssf = signal.cont2discrete((Af, Bf, Cf, Df), dt)
+    ssr = signal.cont2discrete((Ar, Br, Cr, Dr), dt)
 
     Af = ssf[0]
     Bf = ssf[1]
-    Ab = ssb[0]
-    Bb = ssb[1]
+    Cf = ssf[2]
+    Df = ssf[3]
+    Ar = ssr[0]
+    Br = ssr[1]
+    Cr = ssr[2]
+    Dr = ssr[3]
 
-    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wf, Af, Bf, Cf, Q, np.zeros((2, 2)))
-    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wb, Ab, Bb, Cb, Q, np.zeros((2, 2)))
+    uf = solve(Np, np.array([[x[4, 0]], [x[5, 0]], [x[0, 0]], [x[1, 0]]]), wfdot, Af, Bf, Cf, Df, Q, R)
+    ub = solve(Np, np.array([[x[6, 0]], [x[7, 0]], [x[2, 0]], [x[3, 0]]]), wrdot, Ar, Br, Cr, Dr, Q, R)
     return uf[0], ub[0]
 
 
@@ -158,5 +161,5 @@ if __name__ == "__main__":
                 dt=0.01, 
                 x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
                 wfdot=np.zeros((10, 1)),
-                wbdot=np.zeros((10, 1))
+                wrdot=np.zeros((10, 1))
                )
