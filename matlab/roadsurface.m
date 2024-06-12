@@ -13,20 +13,20 @@
 
 
 % Time init
-f = 100;            % Hz
+f = 1000;            % Hz
 
 % Tunable parametrs (dependent on bump surface)
 A = 0.3;            % m
-V = 36 / 3.6;       % km/h
-l = 10;             % m
-L = 10;             % m
+V = 25 / 3.6;       % km/h
+l = 0.1*V;             % m
+L = 0.5;             % m
 
 %Generate profile
-profileBump = isolatedBump(f, A, V, l, L, 10);
+profileBump = isolatedBump(f, A, V, l, L, 5);
 profileTable = isolatedTable(f, V, l, 10);
 profileISO = isoRoad(f, V, 10);
 
-profileTime = 0:1/f:10;
+profileTime = 0:1/f:5;
 % profile = [profileBump, profileTable];
 % profileTime = [tValues, tValues + tValues(end)];
 

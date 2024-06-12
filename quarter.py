@@ -111,7 +111,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Cf = np.array([
         [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
     
-    Df = np.array([[0, 1/(par.ms/2)]])
+    Df = np.array([[0, -1/(par.ms/2)]])
 
     Ar = np.array([
         [0, 0, 1, -1],
@@ -130,7 +130,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Cr = np.array([
         [-par.ksr/(par.ms/2), 0, -par.csr/(par.ms/2), par.csr/(par.ms/2)]])
     
-    Dr = np.array([[0, 1/(par.ms/2)]])
+    Dr = np.array([[0, -1/(par.ms/2)]])
 
     Q = np.array([[1]])
 
@@ -148,9 +148,24 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Cr = ssr[2]
     Dr = ssr[3]
 
-    uf = solve(Np, np.array([[x[0, 0]], [x[4, 0]], [x[1, 0]], [x[5, 0]]]), wfdot, Af, Bf, Cf, Df, Q, R)
-    ub = solve(Np, np.array([[x[2, 0]], [x[6, 0]], [x[3, 0]], [x[7, 0]]]), wrdot, Ar, Br, Cr, Dr, Q, R)
+    xf, xr = state_mapping(x)
+    uf = solve(Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
+    ub = solve(Np, xr, wrdot, Ar, Br, Cr, Dr, Q, R)
     return uf[0], ub[0]
+
+
+def state_mapping(x: npt.NDArray):
+    #   state
+    #       1 zs-zu
+    #       2 zu - zr
+    #       3 zs'
+    #       4 zu'
+    #   input
+    #       1 zr'
+    #       2 f
+    xf = np.array([[x[0, 0]], [x[4, 0]], [x[1, 0]], [x[5, 0]]])
+    xr = np.array([[x[2, 0]], [x[6, 0]], [x[3, 0]], [x[7, 0]]])
+    return xf, xr
 
 
 if __name__ == "__main__":

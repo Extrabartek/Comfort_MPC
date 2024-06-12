@@ -3,11 +3,14 @@ import matplotlib.pyplot as plt
 
 from roadsurface import isolatedBump, isolatedTable, isoRoad
 from state_space_half_car import half_car_state_space, Parameters
-from quarter import quarter_car
+from quarter import quarter_car, state_mapping
 
 par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
                  1000, 1.3, 1.5)
+
+par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000,
+                 29500, 29500, 1500, 1500, 1.3, 1.5)
 
 # Define the state-space matrices
 state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
@@ -24,17 +27,18 @@ state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time init
 f = 1000  # Hz
-endTime = 0.3  # s
+endTime = 5  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 V = 25 / 3.6  # velocity of the car [m/s]
-tl = 0.01  # time of the bump [s]
+tl = 0.1  # time of the bump [s]
 l = tl * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
 
 # run the script to create the road profile
+# road_profile_front = np.array(isoRoad(f, V, endTime))
 road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
 
 # Calculate the delay in samples
@@ -84,7 +88,7 @@ B = np.array([
 C = np.array([
     [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
 
-D = np.array([[0, 1/(par.ms/2)]])
+D = np.array([[0, -1/(par.ms/2)]])
 
 for i in range(n):
     # create the road profile based on the derivative
@@ -100,14 +104,16 @@ for i in range(n):
             prediction_road_profile[j] = np.array([road_profile_derivative_front[index], road_profile_derivative_rear[index]])
 
     # solve for the control input
-    u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
-    u = np.array([[u[0]], [u[1]]])
-    # u = np.array([[0], [0]])
+    # u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    # u = np.array([[u[0]], [u[1]]])
+    u = np.array([[100], [0]])
+    road_profile = np.array([[0], [0]])
     # calculate the derivativec
-    derivative = A @ np.array([[state[0, 0]], [state[4, 0]], [state[1, 0]], [state[5, 0]]]) + B @ np.array([[road_profile[0, 0]], [u[0, 0]]])
+    xf, _ = state_mapping(state)
+    derivative = A @ xf + B @ np.array([[road_profile[0, 0]], [u[0, 0]]])
 
     # calculate the acceleration
-    acceleration = C @ np.array([[state[0, 0]], [state[4, 0]], [state[1, 0]], [state[5, 0]]]) + D @ np.array([[road_profile[0, 0]], [u[0, 0]]])
+    acceleration = C @ xf + D @ np.array([[road_profile[0, 0]], [u[0, 0]]])
 
     # update the state
     change = dt * derivative
