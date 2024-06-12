@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from roadsurface import isolatedBump, isolatedTable, isoRoad
 from state_space_half_car import half_car_state_space, Parameters
 from quarter import quarter_car, state_mapping
+from metrics import wrms
 
 par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
@@ -157,6 +158,9 @@ damping_force_history = par.csf * (state_history[:, 1] - state_history[:, 5]) + 
 z_values = state_history[:, 1] - state_history[:, 5]
 passive_damping_force = par.csf * (passive_state[:, 1] - passive_state[:, 5])
 passive_z_values = passive_state[:, 1] - passive_state[:, 5]
+
+print(wrms([], acceleration_history[:, 0]))
+print(wrms([], passive_acceleration[:, 0]))
 
 plt.figure(figsize=(15, 15))
 plt.subplot(7, 1, 1)
