@@ -130,10 +130,11 @@ def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.
 
     if model.status == GRB.OPTIMAL:
         u = []
+        deltas = []
         for i in range(Np):
             u.append(model.getVarByName(f'f_tilde[{i}]').X)
-        print(str(model.getVarByName(f'delta[{0}]').X) + f' delta[{0}]')
-        return u
+            deltas.append(round(model.getVarByName(f'delta[{0}]').X))
+        return u, deltas
     
 def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray):
     #   state
@@ -200,9 +201,9 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Dr = ssr[3]
 
     xf, xr = state_mapping(x)
-    uf = solve(par.csf, Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
-    ub = solve(par.csr, Np, xr, wrdot, Ar, Br, Cr, Dr, Q, R)
-    return uf[0], ub[0]
+    uf, deltasFront = solve(par.csf, Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
+    ub, deltasRear = solve(par.csr, Np, xr, wrdot, Ar, Br, Cr, Dr, Q, R)
+    return uf[0], ub[0], deltasFront[0], deltasRear[0]
 
 
 def state_mapping(x: npt.NDArray):
