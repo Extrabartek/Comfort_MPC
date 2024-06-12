@@ -58,7 +58,7 @@ for i in range(len(road_profile_rear)):
 # The simulation loop
 
 dt = 1 / f  # time step [s]
-Np = 25  # length of the prediction horizon in points
+Np = 10  # length of the prediction horizon in points
 t_prediction = 0.05  # length of the prediction horizon in seconds
 dt_prediction = t_prediction / Np  # time step of the prediction horizon [s]
 n = len(tValues)  # number of samples

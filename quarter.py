@@ -93,10 +93,10 @@ def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.
         #                                                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
         
         
-        model.addConstr((A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                       - A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]) <= M*(1 - delta[i]))
-        model.addConstr((A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                       - A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]) >= eps+  (-M - eps)*delta[i])
+        model.addConstr((A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+                       - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) <= M*delta[i])
+        model.addConstr((A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+                       - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) >= -M*(1-delta[i]))
         # model.addConstr(z1[i] <= eps + M*delta[i])
         # model.addConstr(z1[i] >= -M*delta[i])
         # model.addConstr(z1[i] <= eps + (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]) + M*(1 - delta[i]))
