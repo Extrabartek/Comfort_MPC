@@ -6,7 +6,7 @@
 % RO47017 Vehicle Dynamics & Control, 2022
 % Use and distribution of this material outside the RO47017 course 
 % only with the permission of the course coordinator
-clc; clear all; close all;
+clc; clear all;
 % QC parameters
 m_s = 410;                                           % sprung mass, kg
 m_u = 45;                                            % unsprung mass, kg
@@ -46,6 +46,16 @@ Ruu = 1 + r3;
 [Kr,~] = lqr(A,B,Rxx,Ruu,Rxu);
 Ac = (A - B  * Kr);
 Cc = (C - Du * Kr);
+
+% C = eye(4);
+% D = zeros(4, 1);
+sys = ss(A, B, C, Du);
+provided_road_profile_generator;
+roadsurface;
+force = linspace(100, 100, length(profileTime));
+y = lsim(sys, force, profileTime);
+plot(profileTime, y(:, 3));
+
 % Calculate bode response: passive & active
 [mag_p_tire_force, phase_p_tire_force] = bode(A,G,C(1,:),Dw(1),1,w);
 [mag_a_tire_force, phase_a_tire_force] = bode(Ac,G,Cc(1,:),Dw(1),1,w);
