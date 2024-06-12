@@ -123,7 +123,7 @@ def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.
         u = []
         for i in range(Np):
             u.append(model.getVarByName(f'f_tilde[{i}]').X)
-            print(str(model.getVarByName(f'delta[{i}]').X) + f' delta[{i}]')
+        print(str(model.getVarByName(f'delta[{0}]').X) + f' delta[{0}]')
         return u
     
 def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray):

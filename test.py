@@ -105,7 +105,7 @@ for i in range(n):
         if i+j >= len(tValues):
             prediction_road_profile[j] = np.array([0, 0])
         else:
-            prediction_road_profile[j] = np.array([road_profile_front[i+j], road_profile_rear[i+j]])
+            prediction_road_profile[j] = np.array([road_profile_derivative_front[i+j], road_profile_derivative_rear[i+j]])
 
     # for j in range(Np):
     #     index = i + j * int(dt_prediction / dt)
@@ -154,46 +154,49 @@ passive_damping_force = par.csf * (passive_state[:, 1] - passive_state[:, 5])
 passive_z_values = passive_state[:, 1] - passive_state[:, 5]
 
 plt.figure(figsize=(15, 15))
-plt.subplot(6, 1, 1)
+plt.subplot(7, 1, 1)
 plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
 plt.plot(tValues, passive_state[:, 0], label='Front suspension deflection passive')
 # plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
 plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
 plt.plot(tValues, passive_state[:, 4], label='Front tire deflection passive')
-plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+plt.axhline(0, linestyle='--')
 # plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
 plt.legend()
 
-plt.subplot(6, 1, 2)
+plt.subplot(7, 1, 2)
 plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
 plt.plot(tValues, passive_acceleration[:, 0], label='Body acceleration passive')
 # plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
-plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+plt.axhline(0, linestyle='--')
 plt.legend()
 
-plt.subplot(6, 1, 3)
+plt.subplot(7, 1, 3)
 plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
 plt.plot(tValues, passive_state[:, 1], label='Front suspension deflection speed passive')
 # plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
 plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
 plt.plot(tValues, passive_state[:, 5], label='Front tire deflection speed passive')
 # plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
-plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+plt.axhline(0, linestyle='--')
 plt.legend()
 
-plt.subplot(6, 1, 4)
+plt.subplot(7, 1, 4)
 plt.plot(tValues, u_history[:, 0], label='Input front')
-plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+plt.axhline(0, linestyle='--')
 
-plt.subplot(6, 1, 5)
+plt.subplot(7, 1, 5)
 plt.plot(tValues, damping_force_history, label='Damping force')
 plt.plot(tValues, passive_damping_force, label='Damping force passive')
-plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+plt.axhline(0, linestyle='--')
 
-plt.subplot(6, 1, 6)
+plt.subplot(7, 1, 6)
 plt.plot(tValues, z_values, label='zs - zu vel')
 plt.plot(tValues, passive_z_values, label='zs - zu vel passive')
-plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+plt.axhline(0, linestyle='--')
+
+plt.subplot(7, 1, 7)
+plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
 
 plt.figure(figsize=(15, 15))
 plt.scatter(z_values, damping_force_history, label='Damping force')
