@@ -14,6 +14,7 @@ par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000,
 
 # Define the state-space matrices
 state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+state_passive = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # List of states:
 # 1 - suspension deflection of the front car body
@@ -27,13 +28,13 @@ state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time init
 f = 1000  # Hz
-endTime = 5  # s
+endTime = 0.15  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 V = 25 / 3.6  # velocity of the car [m/s]
-tl = 0.1  # time of the bump [s]
+tl = 0.05  # time of the bump [s]
 l = tl * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
 
@@ -57,7 +58,7 @@ for i in range(len(road_profile_rear)):
 # The simulation loop
 
 dt = 1 / f  # time step [s]
-Np = 10  # length of the prediction horizon in points
+Np = 25  # length of the prediction horizon in points
 t_prediction = 0.05  # length of the prediction horizon in seconds
 dt_prediction = t_prediction / Np  # time step of the prediction horizon [s]
 n = len(tValues)  # number of samples
@@ -66,6 +67,9 @@ derivative_history = np.zeros((n, 4, 1))  # derivative history
 acceleration_history = np.zeros((n, 1, 1))  # acceleration history
 u_history = np.zeros((n, 2, 1))
 
+passive_state = np.zeros((n, 8, 1))
+passive_derivative = np.zeros((n, 4, 1))
+passive_acceleration = np.zeros((n, 1, 1))
 # generate road profile derivatives
 road_profile_derivative_front = np.gradient(road_profile_front, dt)
 road_profile_derivative_rear = np.gradient(road_profile_rear, dt)
@@ -104,52 +108,85 @@ for i in range(n):
             prediction_road_profile[j] = np.array([road_profile_derivative_front[index], road_profile_derivative_rear[index]])
 
     # solve for the control input
-    # u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
-    # u = np.array([[u[0]], [u[1]]])
-    u = np.array([[100], [0]])
-    road_profile = np.array([[0], [0]])
+    u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    u = np.array([[u[0]], [u[1]]])
+    # u = np.array([[100], [0]])
+    upassive = np.array([[0], [0]])
+    # road_profile = np.array([[0], [0]])
     # calculate the derivativec
     xf, _ = state_mapping(state)
+    xfpass, _ = state_mapping(state_passive)
     derivative = A @ xf + B @ np.array([[road_profile[0, 0]], [u[0, 0]]])
+
+    derivative_passive = A @ xfpass + B @ np.array([[road_profile[0, 0]], [upassive[0, 0]]])
 
     # calculate the acceleration
     acceleration = C @ xf + D @ np.array([[road_profile[0, 0]], [u[0, 0]]])
+    acceleration_passive = C @ xfpass + D @ np.array([[road_profile[0, 0]], [upassive[0, 0]]])
 
     # update the state
     change = dt * derivative
     state = state + np.array([[change[0, 0]], [change[2, 0]], [0], [0], [change[1, 0]], [change[3, 0]], [0], [0]])
+    change_passive = dt* derivative_passive
+    state_passive = state_passive + np.array([[change_passive[0, 0]], [change_passive[2, 0]], [0], [0], [change_passive[1, 0]], [change_passive[3, 0]], [0], [0]])
 
     # save the state
     state_history[i] = state
     derivative_history[i] = derivative
     acceleration_history[i] = acceleration
+    passive_state[i] = state_passive
+    passive_acceleration[i] = acceleration_passive
+    passive_derivative[i] = derivative_passive
     u_history[i] = u
     print(f"Step {i} of {n}")
 
 # create seperated sub-figures for the acceleration, the state and the road profile
+damping_force_history = par.csf * (state_history[:, 1] - state_history[:, 5]) + u_history[:, 0]
+z_values = state_history[:, 1] - state_history[:, 5]
+passive_damping_force = par.csf * (passive_state[:, 1] - passive_state[:, 5])
+passive_z_values = passive_state[:, 1] - passive_state[:, 5]
 
 plt.figure(figsize=(15, 15))
-plt.subplot(4, 1, 1)
+plt.subplot(6, 1, 1)
 plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
+plt.plot(tValues, passive_state[:, 0], label='Front suspension deflection passive')
 # plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
 plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
+plt.plot(tValues, passive_state[:, 4], label='Front tire deflection passive')
+plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
 # plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
 plt.legend()
 
-plt.subplot(4, 1, 2)
+plt.subplot(6, 1, 2)
 plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
+plt.plot(tValues, passive_acceleration[:, 0], label='Body acceleration passive')
 # plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
+plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
 plt.legend()
 
-plt.subplot(4, 1, 3)
+plt.subplot(6, 1, 3)
 plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
+plt.plot(tValues, passive_state[:, 1], label='Front suspension deflection speed passive')
 # plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
 plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
+plt.plot(tValues, passive_state[:, 5], label='Front tire deflection speed passive')
 # plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
+plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
 plt.legend()
 
-plt.subplot(4, 1, 4)
+plt.subplot(6, 1, 4)
 plt.plot(tValues, u_history[:, 0], label='Input front')
+plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+
+plt.subplot(6, 1, 5)
+plt.plot(tValues, damping_force_history, label='Damping force')
+plt.plot(tValues, passive_damping_force, label='Damping force passive')
+plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
+
+plt.subplot(6, 1, 6)
+plt.plot(tValues, z_values, label='zs - zu vel')
+plt.plot(tValues, passive_z_values, label='zs - zu vel passive')
+plt.axhline(0, xmin=0, xmax=endTime, linestyle='--')
 
 
 # plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')

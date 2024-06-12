@@ -5,19 +5,23 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 from state_space_half_car import Parameters
 
-def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, D: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
+def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, D: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
-    M = 1000
+    eps = 1e-8
+    M = 100000
     sigma = 6500 # [N]
-    kappa = 7000 # [Ns/m]
+    # kappa = 7000 # [Ns/m]
+    kappa = cs # [Ns/m]
 
     # Number of states (n) and inputs (m) and constraints (ncon)
     n = A.shape[0]
     m = B.shape[1]
     ncon = C.shape[0]
 
+    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) for i in range(Np)])
     A_c_tilde = np.vstack([C @ np.linalg.matrix_power(A, i) for i in range(Np)])
     B_c_tilde = np.zeros((ncon*Np, m*Np))
+    B_tilde = np.zeros((n*Np, m*Np))
     D_tilde = np.zeros((ncon*Np, m*Np))
     Q_tilde = np.zeros((ncon*Np, ncon*Np))
     R_tilde = np.zeros((m*Np, m*Np))
@@ -25,8 +29,10 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
         for j in range(i+1):
             if i-j <= 0:
                 B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = np.zeros((ncon, m))
+                B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.zeros((n, m))
             else:
                 B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j-1) @ B
+                B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j) @ B
         D_tilde[i * ncon: (i + 1) * ncon, i * m: (i + 1) * m] = D
         Q_tilde[i * ncon: (i + 1) * ncon, i * ncon: (i + 1) * ncon] = Q
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
@@ -42,7 +48,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
     f_tilde = dict()
     w = np.reshape(w, (Np, 1))
     for i in range(Np):
-        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]', lb=w[i, 0]-1e-8, ub=w[i, 0]+1e-8)
+        w_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'w_tilde[{i}]', lb=w[i, 0]-eps, ub=w[i, 0]+eps)
         f_tilde[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f'f_tilde[{i}]', lb=-GRB.INFINITY, ub=GRB.INFINITY)
 
     u_list = []
@@ -53,24 +59,36 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
     u_tilde = MVar.fromlist(u_list)
 
     delta = dict()
+    z = dict()
     for i in range(Np):
         delta[i] = model.addVar(vtype=GRB.BINARY, name='delta[{}]'.format(i))
+        z[i] = model.addVar(vtype=GRB.CONTINUOUS, name='z[{}]'.format(i))
 
     model.update()
-    # for i in range(Np):
-    #     model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
-    #     model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
-    #     # Might need opposite to froce delta to 0
-    #     # model.addGenConstrIndicator(delta[i], 1, A_tilde[i*n: i*n+n, :] @ x + B_tilde[i*n: i*n+n, 0:i*m+m] @ u_tilde[0:i*m+m], GRB.GREATER_EQUAL, 0)
-    #     model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] >= 1e-8 -M * (1 - delta[i]))
-    #     model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
-    #     model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, 1e-8)
-    #     model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
-    #     model.addConstr(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]) - 2*delta[i]*(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-    #                   - A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
+    for i in range(Np):
+        model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
+        model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
+        model.addConstr(A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] >= -M * (1 - delta[i]))
+        model.addConstr(A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
+        # model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, eps)
+        # model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
+        # model.addConstr(z[i] <= eps + M * delta[i])
+        # model.addConstr(z[i] >= - M * delta[i])
+        # model.addConstr(z[i] <= eps + u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+        #                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
+        #                                                     + M * (1 - delta[i]))
+        # model.addConstr(z[i] >= u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+        #                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
+        #                                                     - M * (1 - delta[i]))
+        # model.addConstr(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+        #                                              - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
+        #                                              - 2*z[i] >= 0)
+        model.addConstr(- u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
+                                                     - 2*delta[i]*(- u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
+                                                             - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
 
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
     model.setObjective(obj, GRB.MINIMIZE)
@@ -82,6 +100,7 @@ def solve(Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C:
         u = []
         for i in range(Np):
             u.append(model.getVarByName(f'f_tilde[{i}]').X)
+            # print(model.getVarByName(f'delta[{i}]').X)
         return u
     
 def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray):
@@ -149,8 +168,8 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Dr = ssr[3]
 
     xf, xr = state_mapping(x)
-    uf = solve(Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
-    ub = solve(Np, xr, wrdot, Ar, Br, Cr, Dr, Q, R)
+    uf = solve(par.csf, Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
+    ub = solve(par.csr, Np, xr, wrdot, Ar, Br, Cr, Dr, Q, R)
     return uf[0], ub[0]
 
 
