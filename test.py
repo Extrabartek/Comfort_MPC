@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from roadsurface import isolatedBump, isolatedTable, isoRoad
 from state_space_half_car import half_car_state_space, Parameters
 from quarter import quarter_car, state_mapping
+from metrics import wrms
 
 par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
@@ -74,6 +75,9 @@ passive_acceleration = np.zeros((n, 1, 1))
 road_profile_derivative_front = np.gradient(road_profile_front, dt)
 road_profile_derivative_rear = np.gradient(road_profile_rear, dt)
 
+delta_front = []
+delta_rear = []
+
 # get the state-spaces matrices
 A = np.array([
         [0, 0, 1, -1],
@@ -116,6 +120,8 @@ for i in range(n):
 
     # solve for the control input
     u = quarter_car(par, Np, dt, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    delta_front.append(u[2])
+    delta_rear.append(u[3])
     u = np.array([[u[0]], [u[1]]])
     # u = np.array([[100], [0]])
     upassive = np.array([[0], [0]])
@@ -152,6 +158,9 @@ damping_force_history = par.csf * (state_history[:, 1] - state_history[:, 5]) + 
 z_values = state_history[:, 1] - state_history[:, 5]
 passive_damping_force = par.csf * (passive_state[:, 1] - passive_state[:, 5])
 passive_z_values = passive_state[:, 1] - passive_state[:, 5]
+
+print(wrms([], acceleration_history[:, 0]))
+print(wrms([], passive_acceleration[:, 0]))
 
 plt.figure(figsize=(15, 15))
 plt.subplot(7, 1, 1)
@@ -212,4 +221,13 @@ plt.scatter(passive_z_values, passive_damping_force, label='Damping force passiv
 # plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
 plt.legend()
 # plt.xlim([3, 4])
+plt.show()
+
+plt.plot(tValues, z_values, label='zs - zu vel')
+plt.plot(tValues, passive_z_values, label='zs - zu vel passive')
+plt.plot(tValues, delta_front, label="delta front", marker=".")
+plt.plot(tValues, delta_rear, label="delta rear", marker=".")
+plt.axhline(0, linestyle='--')
+plt.legend()
+plt.grid()
 plt.show()
