@@ -137,8 +137,8 @@ if PLOT == 1:
 
     # Plot the results
     plt.figure(figsize=(10, 8))
-    plt.plot(t, x[0,:], label='Z_u deflection')
-    plt.plot(t, x[1,:], label='Z_u velocity')
+    #plt.plot(t, x[0,:], label='Z_u deflection')
+    #plt.plot(t, x[1,:], label='Z_u velocity')
     plt.plot(t, x[2,:], label='Z_s deflection')
     plt.plot(t, x[3,:], label='Z_s velocity')
     plt.xlim([0, 10])
