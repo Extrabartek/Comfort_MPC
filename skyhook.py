@@ -9,7 +9,7 @@ from roadsurface import isolatedBump, isolatedTable, isoRoad, isolatedBump
 
 FROM_SLIDES = False
 
-m_s = 960
+m_s = 960/2
 m_u = 40
 k_t = 200000
 k_s = 18000
@@ -69,7 +69,7 @@ Du = np.array([[0], [0], [-1]])                                    # feedthrough
 # Weights selection for use in performance index
 r1 = 6e3;      # comfort weight
 r2 = 5e3;      # road holding weight
-r3 = 5e3;         # control effort weight
+r3 = 5e5;         # control effort weight
 Rxx = (A[3,:].T) @ A[3,:] + np.diag([r1, 0, r2, 0])
 Rxx[3,3] = 5e7
 Rxu = np.reshape(-A[3,:].T, (4, 1))
@@ -96,10 +96,10 @@ disturbance = disturbance.reshape(-1, 1).T  # ensure it has the correct shape
 ## Time init
 f_road = 1000           # Hz
 ## Tunable parameters (dependent on bump surface)
-A_road = 0.3            # mS
-V_road = 36 / 3.6       # km/h
+A_road = 0.1            # mS
+V_road = 25 / 3.6       # km/h
 l_road = 10             # m
-L_road = 10             # m
+L_road = 0.5             # m
 
 ## Generate profile
 profileBump = isolatedBump(f_road, A_road, V_road, l_road, L_road, 10)
