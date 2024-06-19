@@ -174,7 +174,7 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
 
     Q = np.array([[1]])
 
-    # R = np.array([[0, 0], [0, 1/40000]])
+    # R = np.array([[0, 0], [0, 1/20000]])
     R = np.array([[0, 0], [0, 0]])
 
     ssf = signal.cont2discrete((Af, Bf, Cf, Df), dt)
