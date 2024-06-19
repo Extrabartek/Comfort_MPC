@@ -24,7 +24,7 @@ state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time init
 f = 1000  # Hz
-endTime = 5  # s
+endTime = 0.2  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
@@ -76,17 +76,21 @@ for i in range(n):
     # create the road profile for the prediction horizon
     prediction_road_profile = np.zeros((Np, 2))
     for j in range(Np):
-        index = i + j * int(dt_prediction / dt)
-        if index >= len(tValues):
+        if i+j >= len(tValues):
             prediction_road_profile[j] = np.array([0, 0])
         else:
-            prediction_road_profile[j] = np.array([road_profile_derivative_front[index], road_profile_derivative_rear[index]])
+            prediction_road_profile[j] = np.array([road_profile_front[i+j], road_profile_rear[i+j]])
+    #     index = i + j * int(dt_prediction / dt)
+    #     if index >= len(tValues):
+    #         prediction_road_profile[j] = np.array([0, 0])
+    #     else:
+    #         prediction_road_profile[j] = np.array([road_profile_derivative_front[index], road_profile_derivative_rear[index]])
 
     # solve for the control input
-    # u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
     # u = dt_prediction/dt * np.array([[u[0]], [u[1]]])
-    # u = np.array([[u[0]], [u[1]]])
-    u = np.array([[-100], [-100]])
+    u = np.array([[u[0]], [u[1]]])
+    # u = np.array([[-100], [-100]])
     # if i is 10:
     #     u = np.array([[1000], [1000]])
     # calculate the derivativec
