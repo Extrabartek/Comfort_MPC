@@ -75,37 +75,10 @@ def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.
 
     model.update()
     for i in range(Np):
-        # model.addConstr(u_tilde[i*2 + 1, 0] <= sigma)
-        # model.addConstr(u_tilde[i*2 + 1, 0] >= -sigma)
-        # model.addConstr(A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #               - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] >= -M * (1 - delta[i]))
-        # model.addConstr(A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #               - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m] <= M * delta[i])
-        # model.addGenConstrIndicator(delta[i], 1, u_tilde[i*2 + 1, 0], GRB.GREATER_EQUAL, eps)
-        # model.addGenConstrIndicator(delta[i], 0, u_tilde[i*2 + 1, 0], GRB.LESS_EQUAL, 0)
-        # model.addConstr(z[i] <= eps + M * delta[i])
-        # model.addConstr(z[i] >= - M * delta[i])
-        # model.addConstr(z[i] <= eps + u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                                     + M * (1 - delta[i]))
-        # model.addConstr(z[i] >= u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                                     - M * (1 - delta[i]))
-        # model.addConstr(u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                              - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                              - 2*z[i] >= 0)
-        # model.addConstr(- u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                              - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                              - 2*delta[i]*(- u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                      - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])) >= 0)
-        
-        
         model.addConstr((A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
                        - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) <= M*delta[i])
         model.addConstr((A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
                        - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) >= -M*(1-delta[i]))
-        
-
 
         model.addConstr(z1[i] <= eps + M*delta[i])
         model.addConstr(z1[i] >= -M*delta[i])
@@ -115,6 +88,7 @@ def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.
         model.addConstr(z1[i] >= u_tilde[i*2 + 1, 0] + (cs - cmin) * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
                                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                     - M*(1 - delta[i]))
+        
         model.addConstr(z2[i] <= eps + M*delta[i])
         model.addConstr(z2[i] >= -M*delta[i])
         model.addConstr(z2[i] <= eps + u_tilde[i*2 + 1, 0] + (cs - cmax) * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
@@ -131,50 +105,6 @@ def solve(cs: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.
                                                             - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
                                                             + 2*z2[i] <= 0)
 
-        
-        # model.addConstr(z[i] <= eps + M * delta[i])
-        # model.addConstr(z[i] >= - M * delta[i])
-        # model.addConstr(z[i] <= eps + u_tilde[i*2 + 1, 0] + kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                                     + M * (1 - delta[i]))
-        # model.addConstr(z[i] >= u_tilde[i*2 + 1, 0] + kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                                     - M * (1 - delta[i]))
-        
-        # model.addConstr(-u_tilde[i*2 + 1, 0] - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                               - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) + 2*z[i] >= 0)
-
-
-
-
-        # model.addConstr(z1[i] <= eps + M*delta[i])
-        # model.addConstr(z1[i] >= -M*delta[i])
-        # model.addConstr(z1[i] <= eps + (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]) + M*(1 - delta[i]))
-        # model.addConstr(z1[i] >= (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]) - M*(1 - delta[i]))
-        # model.addConstr(z2[i] <= eps + M*delta[i])
-        # model.addConstr(z2[i] >= -M*delta[i])
-        # model.addConstr(z2[i] <= eps + (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) + M*(1 - delta[i]))
-        # model.addConstr(z2[i] >= (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]) - M*(1 - delta[i]))
-        # model.addConstr(u_tilde[i*2 + 1, 0] <= -kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                               - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                               + 2*kappa*(z1[i] -z2[i]))
-        # model.addConstr(u_tilde[i*2 + 1, 0] >= kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                               - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                               - 2*kappa*(z1[i] -z2[i]))
-
-        # model.addConstr(u_tilde[i*2 + 1, 0] <= - kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                 - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                              + 2*delta[i]*kappa *(A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                                 - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]))
-        # model.addConstr(u_tilde[i*2 + 1, 0] >= kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                 - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                              - 2*delta[i]*kappa *(A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                                 - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]))
-
-        # model.addConstr(u_tilde[i*2 + 1, 0] * u_tilde[i*2 + 1, 0] >= kappa * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m])
-        #                                                                    * (A_tilde[i*n + 2, :] @ x + B_tilde[i*n + 2, 0:i*m+m] @ u_tilde[0:i*m+m]
-        #                                                                     - A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]))
 
     model.update()
     obj = u_tilde.T @ H @ u_tilde + f @ u_tilde
