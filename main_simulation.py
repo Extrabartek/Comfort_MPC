@@ -1,16 +1,15 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import pickle as pkl
+from scipy.signal import cont2discrete
 
-from roadsurface import isolatedBump, isolatedTable, isoRoad
+from roadsurface import isolatedBump, isolatedTable, isoRoad, isolatedCircle
 from state_space_half_car import half_car_state_space, Parameters
-from quarter import quarter_car
+from quarter import quarter_car, state_mapping, state_setting
+from metrics import wrms
 
 par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
-                 1000, 1.3, 1.5)
-
-# Define the state-space matrices
-state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+                 1000, 1000/1.5, 1000*1.5, 1.3, 1.5)
 
 # List of states:
 # 1 - suspension deflection of the front car body
@@ -21,128 +20,149 @@ state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 # 6 - vertical velocity of the front wheel
 # 7 - tire deflection of the rear car body
 # 8 - vertical velocity of the rear wheel
+state_quarter = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
-# Time init
-f = 1000  # Hz
-endTime = 0.2  # s
-tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
+# Time
+f = 500  # Hz
+dt = 1/f # s
+endTime = 1  # s
+tValues = np.arange(0, endTime, dt)  # the time array [s]
+Np = 100  # length of the prediction horizon in points
+Npfile = Np # file naming only, as Np is overwritten 
 
-# Tunable parameters (dependent on bump profile)
+# Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
-V = 25 / 3.6  # velocity of the car [m/s]
-tl = 0.00  # time of the bump [s]
-l = tl * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
+V = 100 / 3.6  # velocity of the car [m/s]
+tl = 0.02  # time of the bump [s]
 
-# run the script to create the road profile
-road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
-
-# Calculate the delay in samples
+l = tl * V  # position of the bump [m]
+road_type = "iso"
+k = 3
 delay_samples = int((par.l1 + par.l2) / V * f)
+# Front bump
+match road_type:
+    case "bump":
+        road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
+    case "table":
+        road_profile_front = np.array(isolatedTable(f, V, l, endTime))
+    case "iso":
+        road_profile_front = np.array(isoRoad(f, V, k, endTime))
+    case "circle":
+        road_profile_front = np.array(isolatedCircle(f, V, endTime))
 
-# Initialize the rear road profile
+# Rear bump
 road_profile_rear = np.zeros(len(tValues))
-
-# Create the delayed rear road profile
 for i in range(len(road_profile_rear)):
     if i < delay_samples:
         road_profile_rear[i] = 0
     else:
         road_profile_rear[i] = road_profile_front[i - delay_samples]
 
-# The simulation loop
+# State Space
+A = np.array([
+        [0, 0, 1, -1],
+        [0, 0, 0, 1],
+        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
+        [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
+    ])
 
-dt = 1 / f  # time step [s]
-Np = 10  # length of the prediction horizon in points
-t_prediction = 0.05  # length of the prediction horizon in seconds
-dt_prediction = t_prediction / Np  # time step of the prediction horizon [s]
+B = np.array([
+    [0, 0],
+    [-1, 0],
+    [0, -1/(par.ms/2)],
+    [0, 1/par.muf]
+])
+
+C = np.array([
+    [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
+    [0, 1, 0, 0]])
+
+D = np.array([[0, -1/(par.ms/2)],
+              [0, 0]])
+
+ss = cont2discrete((A, B, C, D), dt)
+A = ss[0]
+B = ss[1]
+C = ss[2]
+D = ss[3]
+
+# Simulation
 n = len(tValues)  # number of samples
 state_history = np.zeros((n, 8, 1))  # state history
-derivative_history = np.zeros((n, 8, 1))  # derivative history
-acceleration_history = np.zeros((n, 2, 1))  # acceleration history
+state_pass_history = np.zeros((n, 8, 1))  # passive state history
+output_history = np.zeros((n, 4, 1))  # acceleration history
+output_pass_history = np.zeros((n, 4, 1))  # passive acceleration history
 u_history = np.zeros((n, 2, 1))  # control input history
 
 # generate road profile derivatives
 road_profile_derivative_front = np.gradient(road_profile_front, dt)
 road_profile_derivative_rear = np.gradient(road_profile_rear, dt)
 
-# get the state-spaces matrices
-A, B, F, C, E = half_car_state_space(par)
+# optimization variables
+delta_front = []
+delta_rear = []
 
 for i in range(n):
-    # create the road profile based on the derivative
-    # road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
-    road_profile = np.array([[0], [0]])
+    if Np > n - i:
+        Np = n - i
+
     # create the road profile for the prediction horizon
     prediction_road_profile = np.zeros((Np, 2))
     for j in range(Np):
-        if i+j >= len(tValues):
-            prediction_road_profile[j] = np.array([0, 0])
-        else:
-            prediction_road_profile[j] = np.array([road_profile_front[i+j], road_profile_rear[i+j]])
-    #     index = i + j * int(dt_prediction / dt)
-    #     if index >= len(tValues):
-    #         prediction_road_profile[j] = np.array([0, 0])
-    #     else:
-    #         prediction_road_profile[j] = np.array([road_profile_derivative_front[index], road_profile_derivative_rear[index]])
+        prediction_road_profile[j] = np.array(
+                [road_profile_derivative_front[i + j], road_profile_derivative_rear[i + j]])
 
-    # solve for the control input
-    u = quarter_car(par, Np, dt_prediction, state, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
-    # u = dt_prediction/dt * np.array([[u[0]], [u[1]]])
-    u = np.array([[u[0]], [u[1]]])
-    # u = np.array([[-100], [-100]])
-    # if i is 10:
-    #     u = np.array([[1000], [1000]])
-    # calculate the derivativec
-    derivative = A @ state + B @ road_profile + F @ u
+    road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
+    # road_profile = np.array([[0], [0]])
 
-    # calculate the acceleration
-    acceleration = C @ state + E @ u
+    mpc = quarter_car(par, Np, dt, state_quarter, prediction_road_profile[:, 0], prediction_road_profile[:, 1], single=True)
+    force = np.array([[mpc[0]], [mpc[1]]])
 
-    # update the state
-    state = state + dt * derivative
+    uf = np.array([[road_profile[0, 0]], [force[0, 0]]])
+    ur = np.array([[road_profile[1, 0]], [force[1, 0]]])
+
+    ufpass = np.array([[road_profile[0, 0]], [0]])
+    urpass = np.array([[road_profile[1, 0]], [0]])
+
+    xf, _ = state_mapping(state_quarter)
+    xfpass, _ = state_mapping(state_pass)
+
+    next_state = A @ xf + B @ uf
+    next_state_passive = A @ xfpass + B @ ufpass
+
+    output = C @ xf + D @ uf
+    output_passive = C @ xfpass + D @ ufpass
+
+    state_quarter = state_setting(next_state, np.zeros((4, 1)))
+    state_pass = state_setting(next_state_passive, np.zeros((4, 1)))
 
     # save the state
-    state_history[i] = state
-    derivative_history[i] = derivative
-    acceleration_history[i] = acceleration
-    u_history[i] = u
+    delta_front.append(mpc[2])
+    delta_rear.append(mpc[3])
+    state_history[i] = state_quarter
+    state_pass_history[i] = state_pass
+    output_history[i] = np.array([[output[0, 0]], [output[1, 0]], [0], [0]])
+    output_pass_history[i] = np.array([[output_passive[0, 0]], [output_passive[1, 0]], [0], [0]])
+    u_history[i] = np.array([[force[0, 0]], [force[1, 0]]])
     print(f"Step {i} of {n}")
 
-# create seperated sub-figures for the acceleration, the state and the road profile
+damping_force_history = par.csf * (state_history[:, 1] - state_history[:, 5]) + u_history[:, 0]
+damping_force_passive = par.csf * (state_pass_history[:, 1] - state_pass_history[:, 5])
+deflection_velocity = state_history[:, 1] - state_history[:, 5]
+deflection_velocity_passive = state_pass_history[:, 1] - state_pass_history[:, 5]
 
-plt.figure(figsize=(15, 15))
-plt.subplot(4, 1, 1)
-plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
-# plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
-# plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
-plt.legend()
+print(f"Active wrms: {wrms([], output_history[:, 0])}")
+print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
 
-plt.subplot(4, 1, 2)
-plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
-plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
-plt.legend()
+# save the results
+results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
+           damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history,
+           output_pass_history, par.csf, par.csr, par.csmin, par.csmax]
 
-plt.subplot(4, 1, 3)
-plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
-# plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
-plt.plot(tValues, state_history[:, 5], label='Front tire deflection speed')
-# plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
-plt.legend()
+# create a name for the file, based variables like endTime, f, tl, NP etc.
+name = f"results_type_{road_type}_endT_{endTime}_f_{f}_tl_{tl}_Np_{Npfile}_quarter.pkl"
 
-plt.subplot(4, 1, 4)
-plt.plot(tValues, u_history[:, 0], label='Front control input')
-plt.plot(tValues, u_history[:, 1], label='Rear control input')
-
-
-# plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
-# plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
-# plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
-# plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-# plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
-# plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
-# plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
-plt.legend()
-# plt.xlim([3, 4])
-plt.show()
+with open('results/' + name, 'wb') as f:
+    pkl.dump(results, f)

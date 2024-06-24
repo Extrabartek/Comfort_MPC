@@ -39,7 +39,7 @@ def plot_acceleration_comparison(ts, a_z):
     plt.show()
 
 
-def plot_results(name: str):
+def plot_quarter(name: str):
     """ Plot the results of the simulation
 
     Parameters:
@@ -48,14 +48,30 @@ def plot_results(name: str):
     try:
         # Load the results
         with open("results/" + name, 'rb') as file:
-            state_history, derivative_history, acceleration_history, u_history, road_profile_front, road_profile_rear, damping_force_history, z_values, passive_damping_force, passive_z_values, tValues, passive_state, passive_acceleration, road_profile_front, delta_front, delta_rear, zlistf = pkl.load(
+            state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax = pkl.load(
                 file)
             print("Results loaded successfully")
     except Exception as e:
         print(f"Error: {e}")
 
+    print(tValues.size, state_history[:, 0].size)
+
+    plt.figure(figsize=(4, 3))
+    sus_deflection = np.fft.fft(state_history[:, 0])
+    sus_deflection_passive = np.fft.fft(state_pass_history[:, 0])
+    freq = np.fft.fftfreq(state_history[:, 0].size, d=tValues[1] - tValues[0])
+    sus_deflection = np.abs(sus_deflection)
+
+    print(freq)
+    print(sus_deflection)
+    print(len(freq), len(sus_deflection))
+    plt.plot(freq, np.abs(sus_deflection), label='MPC')
+    plt.plot(freq, np.abs(sus_deflection_passive), label='Passive')
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Magnitude [dB]')
+
+
     plt.figure(figsize=(12, 12))
-    # plt.subplot(7, 1, 1)
     # plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
     # plt.plot(tValues, passive_state[:, 0], label='Front suspension deflection passive')
     # # plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
@@ -64,10 +80,10 @@ def plot_results(name: str):
     # plt.axhline(0, linestyle='--')
     # # plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
     # plt.legend()
-    #
+
     plt.subplot(4, 1, 1)
-    plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
-    plt.plot(tValues, passive_acceleration[:, 0], label='Body acceleration passive')
+    plt.plot(tValues, output_history[:, 0], label='Body acceleration')
+    plt.plot(tValues, output_pass_history[:, 0], label='Body acceleration passive')
     # # plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
     # plt.axhline(0, linestyle='--')
     plt.xlabel('Time [s]', fontsize=16)
@@ -99,7 +115,7 @@ def plot_results(name: str):
     plt.subplot(4, 1, 3)
     plt.plot(tValues, damping_force_history, label='Total damping force - Active Damper')
     # plt.plot(tValues, damping_force_history - u_history[:, 0], label='Damping force - input front')
-    plt.plot(tValues, passive_damping_force, label='Total damping force - Passive Damper')
+    plt.plot(tValues, damping_force_passive, label='Total damping force - Passive Damper')
     # plt.axhline(0, linestyle='--')
     plt.xlabel('Time [s]', fontsize=16)
     plt.ylabel('Force [N]', fontsize=16)
@@ -122,23 +138,22 @@ def plot_results(name: str):
     plt.yticks(fontsize=16)
     plt.grid()
     plt.legend(fontsize=16)
-    plt.legend(fontsize=16)
 
-    # plt.figure(figsize=(10, 10))
-    # plt.scatter(passive_z_values, passive_damping_force, label='Passive Damper', color='red')
-    # plt.scatter(z_values, damping_force_history, label='Active Damper')
-    # # need to add parameters as a saved value
-    # z_values_range = np.linspace(np.min(z_values), np.max(z_values), num=len(z_values))
-    # plt.plot(z_values_range, z_values_range*1500, linestyle='--', color='black', label='Passive Damper')
-    # plt.plot(z_values_range, z_values_range*1500*1.5, linestyle='--', color='red', label='Max Active Damper')
-    # plt.plot(z_values_range, z_values_range*1500/1.5, linestyle='--', color='blue', label='Min Active Damper')
-    # plt.xlabel('Suspension Velocity [m/s]', fontsize=20)
-    # plt.ylabel('Damping Force [N]', fontsize=20)
-    # plt.xticks(fontsize=20)
-    # plt.yticks(fontsize=20)
-    # plt.grid()
-    # plt.legend(fontsize=20)
-    # plt.tight_layout()
+    plt.figure(figsize=(10, 10))
+    plt.scatter(deflection_velocity_passive, damping_force_passive, label='Passive Damper', color='red')
+    plt.scatter(deflection_velocity, damping_force_history, label='Active Damper')
+    # need to add parameters as a saved value
+    z_values_range = np.linspace(np.min(deflection_velocity), np.max(deflection_velocity), num=len(deflection_velocity))
+    plt.plot(z_values_range, z_values_range*csf, linestyle='--', color='black', label='Passive Damper')
+    plt.plot(z_values_range, z_values_range*csmax, linestyle='--', color='red', label='Max Active Damper')
+    plt.plot(z_values_range, z_values_range*csmin, linestyle='--', color='blue', label='Min Active Damper')
+    plt.xlabel('Suspension Velocity [m/s]', fontsize=20)
+    plt.ylabel('Damping Force [N]', fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.grid()
+    plt.legend(fontsize=20)
+    plt.tight_layout()
     # plt.show()
     ##################################################
     # plt.figure()
@@ -161,13 +176,13 @@ def plot_results(name: str):
     plt.tight_layout()
     plt.show()
 
-    print(wrms([], acceleration_history[:, 0]))
-    print(wrms([], passive_acceleration[:, 0]))
+    print(wrms([], output_history[:, 0]))
+    print(wrms([], output_pass_history[:, 0]))
 
-    print(wrmq(acceleration_history[:, 0], []))
-    print(wrmq(passive_acceleration[:, 0], []))
+    print(wrmq(output_history[:, 0], []))
+    print(wrmq(output_pass_history[:, 0], []))
 
 
 if __name__ == "__main__":
-    plot_results("results_type_bump_endT_0.5_f_1000_tl_0.01_Np_10_no_constrains.pkl")
+    plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
 
