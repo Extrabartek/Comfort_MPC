@@ -67,11 +67,11 @@ def plot_quarter(name: str):
 
 
     plt.figure(figsize=(4, 3))
-    acc_freq = np.fft.rfft(output_history[:, 0])
-    acc_freq_pass = np.fft.rfft(output_pass_history[:, 0])
-    freq = np.fft.rfftfreq(output_history[:, 0].size, d=tValues[1] - tValues[0])
+    acc_freq = np.fft.fft(output_history[:, 0])
+    acc_freq_pass = np.fft.fft(output_pass_history[:, 0])
+    freq = np.fft.fftfreq(output_history[:, 0].size, d=tValues[1] - tValues[0])
 
-    plt.semilogx(freq[:-1], ctrl.mag2db(np.abs(acc_freq[:len(freq)-1])), label='MPC')
+    plt.plot(freq, ctrl.mag2db(np.abs(acc_freq)*2/len(acc_freq)), label='MPC')
     # State Space
     A = np.array([
             [0, 0, 1, -1],
@@ -92,7 +92,7 @@ def plot_quarter(name: str):
 
     D = np.array([[0]])
     w, mag, phase = signal.bode(signal.StateSpace(A, B, C, D))
-    plt.semilogx(w, mag, label='State Space')
+    #.plot(w, mag, label='State Space')
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('Magnitude [dB]')
 
