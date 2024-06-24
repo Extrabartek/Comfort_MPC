@@ -11,6 +11,8 @@ par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
                  1000, 1000/1.5, 1000*1.5, 1.3, 1.5)
 
+par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000, 29500, 29500, 1500, 1500, 300, 4000, 1.3, 1.5)
+
 # List of states:
 # 1 - suspension deflection of the front car body
 # 2 - vertical velocity of the front car body
@@ -25,8 +27,8 @@ state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
 f = 200  # Hz
-dt = 1/f # s
-endTime = 10  # s
+dt = 1/f  # s
+endTime = 1  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]
 Np = 10  # length of the prediction horizon in points
 Npfile = Np # file naming only, as Np is overwritten 
@@ -35,10 +37,10 @@ Npfile = Np # file naming only, as Np is overwritten
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
 V = 100 / 3.6  # velocity of the car [m/s]
-tl = 0.02  # time of the bump [s]
+tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
-road_type = "iso"
+road_type = "bump"
 k = 3
 delay_samples = int((par.l1 + par.l2) / V * f)
 # Front bump

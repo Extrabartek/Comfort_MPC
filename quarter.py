@@ -39,8 +39,8 @@ def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArra
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
 
     B_c_tilde = B_c_tilde + D_tilde
-    H = B_c_tilde.T @ Q_tilde @ B_c_tilde + R_tilde # checked
-    f = 2 * x.T @ A_c_tilde.T @ Q_tilde @ B_c_tilde # checked
+    H = B_c_tilde.T @ Q_tilde @ B_c_tilde + R_tilde  # checked
+    f = 2 * x.T @ A_c_tilde.T @ Q_tilde @ B_c_tilde  # checked
 
     model = Model('MPC controller')
     model.Params.LogToConsole = 0
