@@ -24,11 +24,11 @@ state_quarter = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]
 state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
-f = 500  # Hz
+f = 200  # Hz
 dt = 1/f # s
-endTime = 1  # s
+endTime = 10  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]
-Np = 100  # length of the prediction horizon in points
+Np = 10  # length of the prediction horizon in points
 Npfile = Np # file naming only, as Np is overwritten 
 
 # Bump parameters (dependent on bump profile)
@@ -159,7 +159,7 @@ print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
 # save the results
 results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
            damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history,
-           output_pass_history, par.csf, par.csr, par.csmin, par.csmax]
+           output_pass_history, par.csf, par.csr, par.csmin, par.csmax, par]
 
 # create a name for the file, based variables like endTime, f, tl, NP etc.
 name = f"results_type_{road_type}_endT_{endTime}_f_{f}_tl_{tl}_Np_{Npfile}_quarter.pkl"

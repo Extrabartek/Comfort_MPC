@@ -2,7 +2,9 @@ import numpy as np
 from scipy.fft import fft, ifft
 from scipy.signal import freqresp
 from scipy.signal import TransferFunction as tf
+import scipy.signal as signal
 import matplotlib.pyplot as plt
+import control as ctrl
 from metrics import get_a_w, rms
 import pickle as pkl
 from metrics import wrms, wrmq
@@ -48,25 +50,49 @@ def plot_quarter(name: str):
     try:
         # Load the results
         with open("results/" + name, 'rb') as file:
-            state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax = pkl.load(
+            state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
                 file)
             print("Results loaded successfully")
     except Exception as e:
         print(f"Error: {e}")
 
-    print(tValues.size, state_history[:, 0].size)
-
     plt.figure(figsize=(4, 3))
     sus_deflection = np.fft.fft(state_history[:, 0])
     sus_deflection_passive = np.fft.fft(state_pass_history[:, 0])
     freq = np.fft.fftfreq(state_history[:, 0].size, d=tValues[1] - tValues[0])
-    sus_deflection = np.abs(sus_deflection)
+    plt.loglog(freq, np.abs(sus_deflection), label='MPC')
+    plt.loglog(freq, np.abs(sus_deflection_passive), label='Passive')
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Magnitude [dB]')
 
-    print(freq)
-    print(sus_deflection)
-    print(len(freq), len(sus_deflection))
-    plt.plot(freq, np.abs(sus_deflection), label='MPC')
-    plt.plot(freq, np.abs(sus_deflection_passive), label='Passive')
+
+    plt.figure(figsize=(4, 3))
+    acc_freq = np.fft.fft(output_history[:, 0])
+    acc_freq_pass = np.fft.fft(output_pass_history[:, 0])
+    freq = np.fft.fftfreq(output_history[:, 0].size, d=tValues[1] - tValues[0])
+
+    plt.plot(freq, ctrl.mag2db(np.abs(acc_freq)*2/len(acc_freq)), label='MPC')
+    # State Space
+    A = np.array([
+            [0, 0, 1, -1],
+            [0, 0, 0, 1],
+            [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
+            [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
+        ])
+
+    B = np.array([
+        [0],
+        [-1],
+        [0],
+        [0]
+    ])
+
+    C = np.array([
+        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
+
+    D = np.array([[0]])
+    w, mag, phase = signal.bode(signal.StateSpace(A, B, C, D))
+    #.plot(w, mag, label='State Space')
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('Magnitude [dB]')
 
@@ -184,5 +210,7 @@ def plot_quarter(name: str):
 
 
 if __name__ == "__main__":
-    plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
+    #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
+    # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
+    plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
 
