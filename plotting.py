@@ -103,8 +103,8 @@ def plot_quarter(name: str):
     freq_welch , result_welch_active = signal.welch(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
     freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
     freq_psd, result_psd_active = signal.periodogram(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
-    # plt.loglog(freq, abs(2 * result), label='Active')
-    # plt.loglog(freq, (abs((tValues[1] - tValues[0])*2 * result_passive) ** 2)/(2 * (freq[1] - freq[0])), label='Passive')
+    # plt.loglog(freq, abs(2 * result), label='Active') plt.loglog(freq, (abs((tValues[1] - tValues[0])*2 *
+    # result_passive) ** 2)/(2 * (freq[1] - freq[0])), label='Passive')
     plt.loglog(freq_psd, result_psd, label='Passive PSD')
     plt.loglog(freq_psd, result_psd_active, label='Active PSD')
     # plt.loglog(freq_welch, result_welch, label='Passive Welch')
@@ -236,5 +236,5 @@ if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
-    plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
+    plot_quarter("results_type_iso_endT_5_f_200_tl_0.1_Np_10_quarter.pkl")
 
