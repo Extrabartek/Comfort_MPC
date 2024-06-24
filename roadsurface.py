@@ -93,11 +93,11 @@ def isolatedTable(f, V, l, endTime):
     return heightProfile
 
 
-def isoRoad(f, V, t) -> list[float]:
+def isoRoad(f, V, k, t) -> list[float]:
     # Road profile generation based on ISO norm
     np.random.seed(20)
     
-    k = 3   # Values For ISO Road A-B Roughness Classification, from 1 to 3 (to be checked)
+    k = k   # Values For ISO Road A-B Roughness Classification, from 1 to 3 (to be checked)
     # V    = 40/3.6 # Vehicle Speed (m/s)
     # L    = 500    # Length Of Road Profile (m)
     L    = t * V    # measurement time (s)

@@ -1,17 +1,18 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import pickle as pkl
+import time
 
-from roadsurface import isolatedBump, isolatedTable, isoRoad
+from roadsurface import isolatedBump, isolatedTable, isoRoad, isolatedCircle
 from state_space_half_car import half_car_state_space, Parameters
 from quarter import quarter_car, state_mapping
 from metrics import wrms
 
 par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
-                 1000, 1.3, 1.5)
+                 1000, 1000/1.5, 1000*1.5, 1.3, 1.5)
 
 par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000,
-                 29500, 29500, 1500, 1500, 1.3, 1.5)
+                 29500, 29500, 1500, 1500, 1500/1.5, 1500*1.5, 1.3, 1.5)
 
 # Define the state-space matrices
 state = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
@@ -29,19 +30,31 @@ state_passive = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]
 
 # Time init
 f = 1000  # Hz
-endTime = 0.3  # s
+endTime = 0.5  # s
 tValues = np.arange(0, endTime, 1 / f)  # the time array [s]
 
 # Tunable parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 V = 25 / 3.6  # velocity of the car [m/s]
-tl = 0.05  # time of the bump [s]
+tl = 0.01  # time of the bump [s]
 l = tl * V  # position of the bump [m]
 L = 0.5  # length of the bump [m]
+road_type = "bump"  # bump, table, iso, circle
+
+match road_type:
+    case "bump":
+        road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
+    case "table":
+        road_profile_front = np.array(isolatedTable(f, V, l, endTime))
+    case "iso":
+        road_profile_front = np.array(isoRoad(f, V, endTime))
+    case "circle":
+        road_profile_front = np.array(isolatedCircle(f, V, endTime))
+
 
 # run the script to create the road profile
 # road_profile_front = np.array(isoRoad(f, V, endTime))
-road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
+# road_profile_front = np.array(isolatedBump(f, A, V, l, L, endTime))
 
 # Calculate the delay in samples
 delay_samples = int((par.l1 + par.l2) / V * f)
@@ -83,23 +96,23 @@ zlistr = []
 
 # get the state-spaces matrices
 A = np.array([
-        [0, 0, 1, -1],
-        [0, 0, 0, 1],
-        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
-        [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
-    ])
+    [0, 0, 1, -1],
+    [0, 0, 0, 1],
+    [-par.ksf / (par.ms / 2), 0, -par.csf / (par.ms / 2), par.csf / (par.ms / 2)],
+    [par.ksf / par.muf, -par.ktf / par.muf, par.csf / par.muf, -par.csf / par.muf]
+])
 
 B = np.array([
     [0, 0],
     [-1, 0],
-    [0, -1/(par.ms/2)],
-    [0, 1/par.muf]
+    [0, -1 / (par.ms / 2)],
+    [0, 1 / par.muf]
 ])
 
 C = np.array([
-    [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
+    [-par.ksf / (par.ms / 2), 0, -par.csf / (par.ms / 2), par.csf / (par.ms / 2)]])
 
-D = np.array([[0, -1/(par.ms/2)]])
+D = np.array([[0, -1 / (par.ms / 2)]])
 
 for i in range(n):
     # create the road profile based on the derivative
@@ -109,10 +122,11 @@ for i in range(n):
     prediction_road_profile = np.zeros((Np, 2))
 
     for j in range(Np):
-        if i+j >= len(tValues):
+        if i + j >= len(tValues):
             prediction_road_profile[j] = np.array([0, 0])
         else:
-            prediction_road_profile[j] = np.array([road_profile_derivative_front[i+j], road_profile_derivative_rear[i+j]])
+            prediction_road_profile[j] = np.array(
+                [road_profile_derivative_front[i + j], road_profile_derivative_rear[i + j]])
 
     # for j in range(Np):
     #     index = i + j * int(dt_prediction / dt)
@@ -145,8 +159,10 @@ for i in range(n):
     # update the state
     change = dt * derivative
     state = state + np.array([[change[0, 0]], [change[2, 0]], [0], [0], [change[1, 0]], [change[3, 0]], [0], [0]])
-    change_passive = dt* derivative_passive
-    state_passive = state_passive + np.array([[change_passive[0, 0]], [change_passive[2, 0]], [0], [0], [change_passive[1, 0]], [change_passive[3, 0]], [0], [0]])
+    change_passive = dt * derivative_passive
+    state_passive = state_passive + np.array(
+        [[change_passive[0, 0]], [change_passive[2, 0]], [0], [0], [change_passive[1, 0]], [change_passive[3, 0]], [0],
+         [0]])
 
     # save the state
     state_history[i] = state
@@ -167,85 +183,13 @@ passive_z_values = passive_state[:, 1] - passive_state[:, 5]
 print(wrms([], acceleration_history[:, 0]))
 print(wrms([], passive_acceleration[:, 0]))
 
-plt.figure(figsize=(15, 15))
-plt.subplot(7, 1, 1)
-plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
-plt.plot(tValues, passive_state[:, 0], label='Front suspension deflection passive')
-# plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
-plt.plot(tValues, passive_state[:, 4], label='Front tire deflection passive')
-plt.axhline(0, linestyle='--')
-# plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
-plt.legend()
+# save the results
+results = [state_history, derivative_history, acceleration_history, u_history, road_profile_front, road_profile_rear,
+           damping_force_history, z_values, passive_damping_force, passive_z_values, tValues, passive_state,
+           passive_acceleration, road_profile_front, delta_front, delta_rear, zlistf]
 
-plt.subplot(7, 1, 2)
-plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
-plt.plot(tValues, passive_acceleration[:, 0], label='Body acceleration passive')
-# plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
-plt.axhline(0, linestyle='--')
-plt.legend()
+# create a name for the file, based variables like endTime, f, tl, NP etc.
+name = f"results_type_{road_type}_endT_{endTime}_f_{f}_tl_{tl}_Np_{Np}_no_constrains.pkl"
 
-plt.subplot(7, 1, 3)
-plt.plot(tValues, state_history[:, 1], label='Front suspension speed')
-plt.plot(tValues, passive_state[:, 1], label='Front suspension speed passive')
-# plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
-plt.plot(tValues, state_history[:, 5], label='Front tire speed')
-plt.plot(tValues, passive_state[:, 5], label='Front tire speed passive')
-# plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
-plt.axhline(0, linestyle='--')
-plt.legend()
-
-plt.subplot(7, 1, 4)
-plt.plot(tValues, u_history[:, 0], label='Input front')
-plt.axhline(0, linestyle='--')
-
-plt.subplot(7, 1, 5)
-plt.plot(tValues, damping_force_history, label='Damping force')
-plt.plot(tValues, damping_force_history-u_history[:, 0], label='Damping force - input front')
-plt.plot(tValues, passive_damping_force, label='Damping force passive')
-plt.axhline(0, linestyle='--')
-plt.legend()
-
-plt.subplot(7, 1, 6)
-plt.plot(tValues, z_values, label='zs - zu vel')
-plt.plot(tValues, passive_z_values, label='zs - zu vel passive')
-plt.axhline(0, linestyle='--')
-plt.legend()
-
-plt.subplot(7, 1, 7)
-plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
-plt.legend()
-
-plt.figure(figsize=(15, 15))
-plt.scatter(z_values, damping_force_history, label='Damping force')
-plt.scatter(passive_z_values, passive_damping_force, label='Damping force passive')
-plt.grid()
-
-
-# plt.plot(tValues, acceleration_history[:, 0], label='Body acceleration')
-# plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
-# plt.plot(tValues, state_history[:, 1], label='Front suspension deflection speed')
-# plt.plot(tValues, state_history[:, 2], label='Rear suspension deflection')
-# plt.plot(tValues, state_history[:, 4], label='Front tire deflection')
-# plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
-# plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
-plt.legend()
-# plt.xlim([3, 4])
-
-plt.figure()
-plt.plot(tValues, z_values, label='zs - zu vel')
-plt.plot(tValues, passive_z_values, label='zs - zu vel passive')
-plt.plot(tValues, delta_front, label="delta front", marker=".")
-plt.plot(tValues, delta_rear, label="delta rear", marker=".")
-plt.axhline(0, linestyle='--')
-plt.legend()
-plt.grid()
-
-plt.figure()
-plt.plot(tValues, damping_force_history, label='Damping force')
-plt.plot(tValues, zlistf, label='z')
-plt.plot(tValues, np.array(delta_front)*4000, label="delta front", marker=".")
-plt.axhline(0, linestyle='--')
-plt.legend()
-plt.grid()
-plt.show()
+with open('results/' + name, 'wb') as f:
+    pkl.dump(results, f)
