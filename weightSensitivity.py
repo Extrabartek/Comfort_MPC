@@ -163,10 +163,10 @@ def runMain(w1Iter, w2Iter):
     print(f"Active wrms: {wrms([], output_history[:, 0])}")
     print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
 
-    cost_wrms = np.mean(output_history[:, 0]**2)**0.5
+    cost_rms = np.mean(output_history[:, 0]**2)**0.5
     cost_holding = np.mean(state_history[:, 4]**2)**0.5
 
-    return cost_wrms, cost_holding
+    return cost_rms, cost_holding
 
     # # save the results
     # results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
