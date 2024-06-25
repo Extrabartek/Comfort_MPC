@@ -3,15 +3,10 @@ import pickle as pkl
 from scipy.signal import cont2discrete
 
 from roadsurface import isolatedBump, isolatedTable, isoRoad, isolatedCircle
-from state_space_half_car import half_car_state_space, Parameters
+from state_space_half_car import half_car_state_space
 from quarter import quarter_car, state_mapping, state_setting
 from metrics import wrms
-
-par = Parameters(960, 1222, 40, 45, 200000,
-                 200000, 18000, 22000, 1000,
-                 1000, 1000/1.5, 1000*1.5, 1.3, 1.5)
-
-par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000, 29500, 29500, 1500, 1500, 300, 4000, 1.3, 1.5)
+from parameters import par
 
 # List of states:
 # 1 - suspension deflection of the front car body

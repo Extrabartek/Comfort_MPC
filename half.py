@@ -3,7 +3,8 @@ import numpy as np
 import numpy.typing as npt
 import scipy.signal as signal
 import matplotlib.pyplot as plt
-from state_space_half_car import Parameters, half_car_state_space
+from state_space_half_car import half_car_state_space
+from parameters import Parameters
 
 def solve(par: Parameters, Np, x: npt.NDArray, wf: npt.NDArray, wr: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, D: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
