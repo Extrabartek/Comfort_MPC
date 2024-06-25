@@ -4,4 +4,6 @@
 !road_A_100kph_30sec_30Hz/*.pkl
 !road_A_100kph_30sec_30Hz/time_traces/*.pkl
 !bump_20kph_3sec_500Hz/*.pkl
-!bump_20kph_3sec_500Hz/time_traces/*.pkl
+!bump_20kph_3sec_500Hz/time_traces/*.pklj
+!road_A_20kph_3sec_500Hz/*.pkl
+!road_A_20kph_3sec_500Hz/time_traces/*.pkl

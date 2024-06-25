@@ -145,7 +145,7 @@ def plot_quarter(name: str):
     # plt.legend()
     #
     plt.subplot(6, 1, 6)
-    plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
+    plt.plot(tValues, road_profile_front[0:-2], label='Road profile')
     plt.xlabel('Time [s]', fontsize=16)
     plt.ylabel('Displacement [m]', fontsize=16)
     plt.xticks(fontsize=16)
@@ -278,7 +278,7 @@ def regenerate_A_results():
     with open('results/road_A_100kph_30sec_30Hz/results_weightSens.pkl', 'wb') as f:
         pkl.dump(results, f)
 
-def regenerate_bump_results():
+def regenerate_A2_results():
     paraWeight = []
     paraComfort = []
     paraComfortWeighted = []
@@ -305,7 +305,7 @@ def regenerate_bump_results():
              '473684.21105263155', 
              '500000.0']
     for f in files:
-        with open(f"results/bump_20kph_3sec_500Hz/time_traces/results_w1_1_w2_{f}.pkl", 'rb') as file:
+        with open(f"results/road_A_20kph_3sec_500Hz/time_traces/results_w1_1_w2_{f}.pkl", 'rb') as file:
             state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
                 file)
 
@@ -316,7 +316,7 @@ def regenerate_bump_results():
 
     results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
-    with open('results/bump_20kph_3sec_500Hz/results_weightSens.pkl', 'wb') as f:
+    with open('results/road_A_20kph_3sec_500Hz/results_weightSens.pkl', 'wb') as f:
         pkl.dump(results, f)
 
 def plot_sensitivity(name: str, plot=True):
@@ -345,11 +345,11 @@ if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
-    #plot_quarter("results_type_bump_endT_2_f_500_tl_0.3_Np_10_quarter.pkl")
+    # plot_quarter("bump_20kph_3sec_500hz/time_traces/results_w1_1_w2_0.01.pkl")
     regenerate_A_results()
     regenerate_D_results()
-    regenerate_bump_results()
+    regenerate_A2_results()
     plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
-    plot_sensitivity('bump_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
+    plot_sensitivity('road_A_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
     plt.show()

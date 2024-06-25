@@ -33,7 +33,7 @@ def runMain(w1Iter, w2Iter):
     A = 0.1  # amplitude of the bump [m]
     L = 0.5  # length of the bump [m]
     V = 20 / 3.6  # velocity of the car [m/s]
-    tl = 0.3  # time of the bump [s]
+    tl = 0.1  # time of the bump [s]
 
     l = tl * V  # position of the bump [m]
     road_type = "bump"
@@ -182,7 +182,7 @@ paraComfort = []
 paraComfortWeighted = []
 paraHolding = []
 
-for id, val in enumerate([1e-8]):
+for id, val in enumerate([0.0101]):
 
     print(f"=== {id:02d} ===")
 
