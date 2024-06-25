@@ -1,1 +1,4 @@
 *.pkl
+!bump_20kph_3sec_500Hz
+!road_D_25kph_30sec_30Hz
+!road_A_100kph_30sec_30Hz
