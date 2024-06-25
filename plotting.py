@@ -197,7 +197,10 @@ def regenerate_D_results():
     paraHolding = []
 
     files = ['0.01', 
+             '8771.939649122807',
+             '17543.869298245612',
              '26315.798947368417', 
+             '39473.69342105263',
              '52631.58789473684', 
              '78947.37684210525', 
              '105263.16578947367', 
@@ -238,7 +241,10 @@ def regenerate_A_results():
     paraHolding = []
 
     files = ['0.01', 
-             '26315.798947368417', 
+             '8771.939649122807',
+             '17543.869298245612',
+             '26315.798947368417',
+             '39473.69342105263', 
              '52631.58789473684', 
              '78947.37684210525', 
              '105263.16578947367', 
@@ -328,6 +334,7 @@ def plot_sensitivity(name: str, plot=True):
     plt.scatter(paraHolding, paraComfortWeighted, c=paraWeight, cmap='viridis')
     plt.xlabel("Road Holding Index")
     plt.ylabel("Weighted Comfort Index")
+    plt.colorbar()
     if plot:
         plt.show()
 
