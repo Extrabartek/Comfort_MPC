@@ -20,6 +20,7 @@ def rmq(a_z) -> np.float32:
 def get_a_w(a_z):
     '''Get the weighted acceleration in the time domain using the frequency response of the weight filter'''
     # Define the frequency points
+    a_z = a_z.ravel()
     n_points = len(a_z)
     f = np.linspace(0.01, 1000, n_points)
     w = f * 2 * np.pi
