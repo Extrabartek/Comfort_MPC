@@ -190,6 +190,22 @@ def plot_quarter(name: str):
     plt.tight_layout()
     plt.show()
 
+def plot_sensitivity(name: str):
+
+    with open('results/' + name, 'rb') as f:
+        paraWeight, paraComfort, paraHolding, paraComfortWeighted = pkl.load(f)
+
+    plt.scatter(paraHolding, paraComfort, c=paraWeight, cmap='viridis')
+    plt.ylabel("Comfort Index")
+    plt.xlabel("Road Holding Index")
+    plt.colorbar()
+    
+    plt.figure()
+    plt.scatter(paraHolding, paraComfortWeighted, c=paraWeight, cmap='viridis')
+    plt.xlabel("Road Holding Index")
+    plt.ylabel("Weighted Comfort Index")
+    plt.show()
+
 
 
 
@@ -197,5 +213,6 @@ if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
-    plot_quarter("results_type_bump_endT_2_f_500_tl_0.3_Np_10_quarter.pkl")
+    #plot_quarter("results_type_bump_endT_2_f_500_tl_0.3_Np_10_quarter.pkl")
+    plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl')
 
