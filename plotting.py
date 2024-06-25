@@ -58,6 +58,16 @@ def plot_quarter(name: str):
     except Exception as e:
         print(f"Error: {e}")
 
+    active_wrms = wrms([], output_history[:, 0])
+    passive_wrms = wrms([], output_pass_history[:, 0])
+
+    print(f"The percentage improvement in WRMS is: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
+
+    active_wrms = wrmq(output_history[:, 0], [])
+    passive_wrms = wrmq(output_pass_history[:, 0], [])
+
+    print(f"The percentage improvement in WRMQ is {100 * (passive_wrms - active_wrms) / passive_wrms} %")
+
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('PSD: Body acceleration [(m/s^2)^2/Hz] ')
     freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
@@ -180,16 +190,12 @@ def plot_quarter(name: str):
     plt.tight_layout()
     plt.show()
 
-    print(wrms([], output_history[:, 0]))
-    print(wrms([], output_pass_history[:, 0]))
 
-    print(wrmq(output_history[:, 0], []))
-    print(wrmq(output_pass_history[:, 0], []))
 
 
 if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
-    plot_quarter("results_type_iso_endT_5_f_30_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_bump_endT_2_f_500_tl_0.3_Np_10_quarter.pkl")
 

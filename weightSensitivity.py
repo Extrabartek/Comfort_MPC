@@ -24,7 +24,7 @@ def runMain(w1Iter, w2Iter):
     # Time
     f = 30  # Hz
     dt = 1/f  # s
-    endTime = 10  # s
+    endTime = 30  # s
     tValues = np.arange(0, endTime, dt)  # the time array [s]
     Np = 10  # length of the prediction horizon in points
     Npfile = Np # file naming only, as Np is overwritten 
@@ -160,18 +160,19 @@ def runMain(w1Iter, w2Iter):
     cost_rms = np.mean(output_history[:, 0]**2)**0.5
     cost_holding = np.mean(state_history[:, 4]**2)**0.5
 
+    # save the results
+    results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
+               damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues,
+               state_pass_history,
+               output_pass_history, par.csf, par.csr, par.csmin, par.csmax, par]
+
+    # create a name for the file, based variables like endTime, f, tl, NP etc.
+    name = f"results_w1_{w1Iter}_w2_{w2Iter}.pkl"
+
+    with open('results/road_A_100kph_30sec_30Hz/time_traces/' + name, 'wb') as f:
+        pkl.dump(results, f)
+
     return cost_rms, cost_holding
-
-    # # save the results
-    # results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
-    #         damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history,
-    #         output_pass_history, par.csf, par.csr, par.csmin, par.csmax, par]
-
-    # # create a name for the file, based variables like endTime, f, tl, NP etc.
-    # name = f"results_type_{road_type}_endT_{endTime}_f_{f}_tl_{tl}_Np_{Npfile}_quarter.pkl"
-
-    # with open('results/' + name, 'wb') as f:
-    #     pkl.dump(results, f)
 
 import matplotlib.pyplot as plt
 
@@ -179,7 +180,7 @@ paraWeight = []
 paraComfort = []
 paraHolding = []
 
-for id, val in enumerate(np.linspace(1e-2,1e+6,30)):
+for id, val in enumerate(np.linspace(1e-2, 1e+6, 2)):
 
     print(f"=== {id:02d} ===")
 
@@ -189,6 +190,12 @@ for id, val in enumerate(np.linspace(1e-2,1e+6,30)):
     paraComfort.append(comfort)
     paraHolding.append(holding)
 
+results = [paraWeight, paraComfort, paraHolding]
+
+name = f"results_weightSens.pkl"
+
+with open('results/road_A_100kph_30sec_30Hz/' + name, 'wb') as f:
+    pkl.dump(results, f)
 
 plt.scatter(paraHolding, paraComfort, c=paraWeight, cmap='viridis')
 plt.ylabel("Comfort Index")
