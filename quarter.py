@@ -5,6 +5,41 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 from state_space_half_car import Parameters
 
+class SS:
+    def __init__(self, par: Parameters, dt: float):
+        A = np.array([
+            [0, 0, 1, -1],
+            [0, 0, 0, 1],
+            [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
+            [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
+        ])
+        B = np.array([
+            [0, 0],
+            [-1, 0],
+            [0, -1/(par.ms/2)],
+            [0, 1/par.muf]
+        ])
+        C = np.array([
+            [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
+            [0, 1, 0, 0]
+        ])
+        D = np.array([
+            [0, -1/(par.ms/2)],
+            [0, 0]
+        ])
+
+        self.Q = np.array([[1, 0], [0, 1]])
+
+        self.R = np.array([[0, 0], [0, 0]])
+
+        ssd = signal.cont2discrete((A, B, C, D), dt)
+        self.A = ssd[0]
+        self.B = ssd[1]
+        self.C = ssd[2]
+        self.D = ssd[3]
+
+        self.par = par
+
 def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, D: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
     eps = 1e-16
@@ -120,7 +155,7 @@ def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArra
             deltas.append(round(model.getVarByName(f'delta[{i}]').X))
         return u, deltas
     
-def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray, single=False):
+def quarter_car(ss: SS, Np:int, dt: float, x: npt.NDArray, wdot: npt.NDArray):
     #   state
     #       1 zs-zu
     #       2 zu - zr
@@ -129,101 +164,23 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     #   input
     #       1 zr'
     #       2 f
-    
-    Af = np.array([
-        [0, 0, 1, -1],
-        [0, 0, 0, 1],
-        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
-        [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
-    ])
 
-    Bf = np.array([
-        [0, 0],
-        [-1, 0],
-        [0, -1/(par.ms/2)],
-        [0, 1/par.muf]
-    ])
-
-    Cf = np.array([
-        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
-        [0, 1, 0, 0]])
-    
-    Df = np.array([[0, -1/(par.ms/2)],
-                   [0, 0]])
-
-    Ar = np.array([
-        [0, 0, 1, -1],
-        [0, 0, 0, 1],
-        [-par.ksr/(par.ms/2), 0, -par.csr/(par.ms/2), par.csr/(par.ms/2)],
-        [par.ksr/par.mur, -par.ktr/par.mur, par.csr/par.mur, -par.csr/par.mur]
-    ])
-
-    Br = np.array([
-        [0, 0],
-        [-1, 0],
-        [0, -1/(par.ms/2)],
-        [0, 1/par.mur]
-    ])
-
-    Cr = np.array([
-        [-par.ksr/(par.ms/2), 0, -par.csr/(par.ms/2), par.csr/(par.ms/2)],
-        [0, 1, 0, 0]])
-    
-    Dr = np.array([[0, -1/(par.ms/2)],
-                   [0, 0]])
-
-    Q = np.array([[1, 0], [0, 1]])
-
-    # R = np.array([[0, 0], [0, 1/20000]])
-    R = np.array([[0, 0], [0, 0]])
-
-    ssf = signal.cont2discrete((Af, Bf, Cf, Df), dt)
-    ssr = signal.cont2discrete((Ar, Br, Cr, Dr), dt)
-
-    Af = ssf[0]
-    Bf = ssf[1]
-    Cf = ssf[2]
-    Df = ssf[3]
-    Ar = ssr[0]
-    Br = ssr[1]
-    Cr = ssr[2]
-    Dr = ssr[3]
-
-    if single:
-        xf, xr = state_mapping(x)
-        uf, deltasFront = solve(par.csf, par.csmin, par.csmax, Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
-        return uf[0], 0.0, deltasFront[0], 0.0
-    else:
-        xf, xr = state_mapping(x)
-        uf, deltasFront = solve(par.csf, par.csmin, par.csmax, Np, xf, wfdot, Af, Bf, Cf, Df, Q, R)
-        ub, deltasRear = solve(par.csr, par.csmin, par.csmax, Np, xr, wrdot, Ar, Br, Cr, Dr, Q, R)
-        return uf[0], ub[0], deltasFront[0], deltasRear[0]
+    uf, deltasFront = solve(ss.par.csf, ss.par.csmin, ss.par.csmax, Np, x, wdot, ss.A, ss.B, ss.C, ss.D, ss.Q, ss.R)
+    return uf[0], deltasFront[0]
 
 
-def state_mapping(x: npt.NDArray):
-    #   state
-    #       1 zs-zu
-    #       2 zu - zr
-    #       3 zs'
-    #       4 zu'
-    #   input
-    #       1 zr'
-    #       2 f
-    xf = np.array([[x[0, 0]], [x[4, 0]], [x[1, 0]], [x[5, 0]]])
-    xr = np.array([[x[2, 0]], [x[6, 0]], [x[3, 0]], [x[7, 0]]])
-    return xf, xr
+# def state_mapping(x: npt.NDArray):
+#     #   state
+#     #       1 zs-zu
+#     #       2 zu - zr
+#     #       3 zs'
+#     #       4 zu'
+#     #   input
+#     #       1 zr'
+#     #       2 f
+#     xf = np.array([[x[0, 0]], [x[4, 0]], [x[1, 0]], [x[5, 0]]])
+#     xr = np.array([[x[2, 0]], [x[6, 0]], [x[3, 0]], [x[7, 0]]])
+#     return xf, xr
 
-def state_setting(xf: npt.NDArray, xr: npt.NDArray):
-    return np.array([[xf[0, 0]], [xf[2, 0]], [xr[0, 0]], [xr[2, 0]], [xf[1, 0]], [xf[3, 0]], [xr[1, 0]], [xr[3, 0]]])
-
-
-if __name__ == "__main__":
-    quarter_car(par = Parameters(960, 1222, 40, 45, 200000,
-                    200000, 18000, 22000, 1000,
-                    1000, 1000/1.5, 1000*1.5, 1.3, 1.5),
-                Np=10, 
-                dt=0.01, 
-                x=np.array([[0], [0.1], [0], [0.1], [0], [0.1], [0], [0.1]]), 
-                wfdot=np.zeros((10, 1)),
-                wrdot=np.zeros((10, 1))
-               )
+# def state_setting(xf: npt.NDArray, xr: npt.NDArray):
+#     return np.array([[xf[0, 0]], [xf[2, 0]], [xr[0, 0]], [xr[2, 0]], [xf[1, 0]], [xf[3, 0]], [xr[1, 0]], [xr[3, 0]]])
