@@ -16,7 +16,7 @@ def solve(par: Parameters, Np, x: npt.NDArray, wf: npt.NDArray, wr: npt.NDArray,
     m = B.shape[1]
     ncon = C.shape[0]
 
-    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) for i in range(Np)])
+    A_tilde = np.vstack([np.linalg.matrix_power(A, i) for i in range(Np)])
     A_c_tilde = np.vstack([C @ np.linalg.matrix_power(A, i) for i in range(Np)])
     B_c_tilde = np.zeros((ncon*Np, m*Np))
     B_tilde = np.zeros((n*Np, m*Np))
@@ -27,13 +27,10 @@ def solve(par: Parameters, Np, x: npt.NDArray, wf: npt.NDArray, wr: npt.NDArray,
         for j in range(i+1):
             if i-j <= 0:
                 B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = np.zeros((ncon, m))
-
-            else:
-                B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j-1) @ B
-            if i-j < 0:
                 B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.zeros((n, m))
             else:
-                B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j) @ B
+                B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j-1) @ B
+                B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j-1) @ B
         D_tilde[i * ncon: (i + 1) * ncon, i * m: (i + 1) * m] = D
         Q_tilde[i * ncon: (i + 1) * ncon, i * ncon: (i + 1) * ncon] = Q
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
@@ -43,7 +40,7 @@ def solve(par: Parameters, Np, x: npt.NDArray, wf: npt.NDArray, wr: npt.NDArray,
     f = 2 * x.T @ A_c_tilde.T @ Q_tilde @ B_c_tilde # checked
 
     model = Model('MPC controller')
-    #model.Params.LogToConsole = 0
+    model.Params.LogToConsole = 0
     
     wf_tilde = dict()
     ff_tilde = dict()
@@ -84,65 +81,65 @@ def solve(par: Parameters, Np, x: npt.NDArray, wf: npt.NDArray, wr: npt.NDArray,
     for i in range(Np):
         # Front -> map to binary
         model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m] >= -M*(1-deltaf[i]))
+                      - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m] >= -M*(1-deltaf[i]))
         model.addConstr(A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m] <= M*deltaf[i])
+                      - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m] <= M*deltaf[i])
         # Rear -> map to binary
         model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m] >= -M*(1-deltar[i]))
+                      - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m] >= -M*(1-deltar[i]))
         model.addConstr(A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                      - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m] <= M*deltar[i])
+                      - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m] <= M*deltar[i])
         
         # Front
         model.addConstr(z1[i] <= eps + M*deltaf[i])
         model.addConstr(z1[i] >= -M*deltaf[i])
         model.addConstr(z1[i] <= eps + u_tilde[i*m + 2, 0] + (par.csf - par.csmin) * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                          - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                          - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                           + M*(1 - deltaf[i]))
         model.addConstr(z1[i] >= u_tilde[i*m + 2, 0] + (par.csf - par.csmin) * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                    - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                    - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                     - M*(1 - deltaf[i]))
         
         model.addConstr(z2[i] <= eps + M*deltaf[i])
         model.addConstr(z2[i] >= -M*deltaf[i])
         model.addConstr(z2[i] <= eps + u_tilde[i*m + 2, 0] + (par.csf - par.csmax) * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                          - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                          - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                           + M*(1 - deltaf[i]))
         model.addConstr(z2[i] >= u_tilde[i*m + 2, 0] + (par.csf - par.csmax) * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                    - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                    - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                     - M*(1 - deltaf[i]))
 
         model.addConstr(-u_tilde[i*m + 2, 0] - (par.csf - par.csmin) * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                            - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m])
+                                                            - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m])
                                                             + 2*z1[i] >= 0)
         model.addConstr(-u_tilde[i*m + 2, 0] - (par.csf - par.csmax) * (A_tilde[i*n + 1, :] @ x + B_tilde[i*n + 1, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                            - A_tilde[i*n + 5, :] @ x + B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m])
+                                                            - A_tilde[i*n + 5, :] @ x - B_tilde[i*n + 5, 0:i*m+m] @ u_tilde[0:i*m+m])
                                                             + 2*z2[i] <= 0)
         
         # Rear
         model.addConstr(z3[i] <= eps + M*deltar[i])
         model.addConstr(z3[i] >= -M*deltar[i])
         model.addConstr(z3[i] <= eps + u_tilde[i*m + 3, 0] + (par.csr - par.csmin) * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                          - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                          - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                           + M*(1 - deltar[i]))
         model.addConstr(z3[i] >= u_tilde[i*m + 3, 0] + (par.csr - par.csmin) * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                    - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                    - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                     - M*(1 - deltar[i]))
         
         model.addConstr(z4[i] <= eps + M*deltar[i])
         model.addConstr(z4[i] >= -M*deltar[i])
         model.addConstr(z4[i] <= eps + u_tilde[i*m + 3, 0] + (par.csr - par.csmax) * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                          - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                          - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                           + M*(1 - deltar[i]))
         model.addConstr(z4[i] >= u_tilde[i*m + 3, 0] + (par.csr - par.csmax) * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                                    - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
+                                                                    - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m]) 
                                                                     - M*(1 - deltar[i]))
 
         model.addConstr(-u_tilde[i*m + 3, 0] - (par.csr - par.csmin) * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                            - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m])
+                                                            - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m])
                                                             + 2*z3[i] >= 0)
         model.addConstr(-u_tilde[i*m + 3, 0] - (par.csr - par.csmax) * (A_tilde[i*n + 3, :] @ x + B_tilde[i*n + 3, 0:i*m+m] @ u_tilde[0:i*m+m]
-                                                            - A_tilde[i*n + 7, :] @ x + B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m])
+                                                            - A_tilde[i*n + 7, :] @ x - B_tilde[i*n + 7, 0:i*m+m] @ u_tilde[0:i*m+m])
                                                             + 2*z4[i] <= 0)
         
         

@@ -58,28 +58,6 @@ def plot_quarter(name: str):
     except Exception as e:
         print(f"Error: {e}")
 
-    # State Space
-    A = np.array([
-            [0, 0, 1, -1],
-            [0, 0, 0, 1],
-            [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)],
-            [par.ksf/par.muf, -par.ktf/par.muf, par.csf/par.muf, -par.csf/par.muf]
-        ])
-
-    B = np.array([
-        [0],
-        [-1],
-        [0],
-        [0]
-    ])
-
-    C1 = np.array([
-        [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
-    
-    C2 = np.array([[0, 1, 0, 0]])
-
-    D = np.array([[0]])
-
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('PSD: Body acceleration [(m/s^2)^2/Hz] ')
     freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
@@ -104,7 +82,7 @@ def plot_quarter(name: str):
     # # plt.plot(tValues, state_history[:, 6], label='Rear tire deflection')
     # plt.legend()
 
-    plt.subplot(4, 1, 1)
+    plt.subplot(6, 1, 1)
     plt.plot(tValues, output_history[:, 0], label='Body acceleration')
     plt.plot(tValues, output_pass_history[:, 0], label='Body acceleration passive')
     # # plt.plot(tValues, acceleration_history[:, 1], label='Pitch acceleration')
@@ -116,17 +94,20 @@ def plot_quarter(name: str):
     plt.grid()
     plt.legend(fontsize=16)
     #
-    # plt.subplot(7, 1, 3)
-    # plt.plot(tValues, state_history[:, 1], label='Front suspension speed')
-    # plt.plot(tValues, passive_state[:, 1], label='Front suspension speed passive')
-    # # plt.plot(tValues, state_history[:, 3], label='Rear suspension deflection speed')
-    # plt.plot(tValues, state_history[:, 5], label='Front tire speed')
-    # plt.plot(tValues, passive_state[:, 5], label='Front tire speed passive')
-    # # plt.plot(tValues, state_history[:, 7], label='Rear tire deflection speed')
-    # plt.axhline(0, linestyle='--')
-    # plt.legend()
+
+    plt.subplot(6, 1, 2)
+    plt.plot(tValues, output_history[:, 1], label='Pitch acceleration')
+    plt.plot(tValues, output_pass_history[:, 1], label='Pitch acceleration passive')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(6, 1, 3)
+    plt.plot(tValues, state_history[:, 1] - state_history[:, 5], label='Front suspension speed')
+    plt.plot(tValues, state_pass_history[:, 1] - state_pass_history[:, 5], label='Front suspension speed passive')
+    plt.axhline(0, linestyle='--')
+    plt.legend()
     #
-    plt.subplot(4, 1, 2)
+    plt.subplot(6, 1, 4)
     plt.plot(tValues, u_history[:, 0], label='Control Input')
     plt.xlabel('Time [s]', fontsize=16)
     plt.ylabel('Force [N]', fontsize=16)
@@ -135,7 +116,7 @@ def plot_quarter(name: str):
     plt.grid()
     plt.legend(fontsize=16)
     #
-    plt.subplot(4, 1, 3)
+    plt.subplot(6, 1, 5)
     plt.plot(tValues, damping_force_history, label='Total damping force - Active Damper')
     # plt.plot(tValues, damping_force_history - u_history[:, 0], label='Damping force - input front')
     plt.plot(tValues, damping_force_passive, label='Total damping force - Passive Damper')
@@ -153,7 +134,7 @@ def plot_quarter(name: str):
     # plt.axhline(0, linestyle='--')
     # plt.legend()
     #
-    plt.subplot(4, 1, 4)
+    plt.subplot(6, 1, 6)
     plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
     plt.xlabel('Time [s]', fontsize=16)
     plt.ylabel('Displacement [m]', fontsize=16)
@@ -210,5 +191,5 @@ if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
-    plot_quarter("results_type_iso_endT_5_f_200_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_iso_endT_5_f_30_tl_0.1_Np_10_quarter.pkl")
 
