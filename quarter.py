@@ -117,7 +117,7 @@ def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArra
             deltas.append(round(model.getVarByName(f'delta[{i}]').X))
         return u, deltas
 
-def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray, single=False):
+def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.NDArray, wrdot: npt.NDArray, single=False, w1=1, w2=1):
     #   state
     #       1 zs-zu
     #       2 zu - zr
@@ -170,7 +170,8 @@ def quarter_car(par: Parameters, Np:int, dt: float, x: npt.NDArray, wfdot: npt.N
     Dr = np.array([[0, -1/(par.ms/2)],
                    [0, 0]])
 
-    Q = np.array([[1, 0], [0, 1]])
+    Q = np.array([[w1, 0],
+                  [0, w2]])
 
     # R = np.array([[0, 0], [0, 1/20000]])
     R = np.array([[0, 0], [0, 0]])
