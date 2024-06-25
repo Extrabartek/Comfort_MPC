@@ -158,7 +158,8 @@ def runMain(w1Iter, w2Iter):
     print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
 
     cost_rms = np.mean(output_history[:, 0]**2)**0.5
-    cost_holding = np.mean(state_history[:, 4]**2)**0.5
+    cost_holding = np.mean(output_history[:, 1]**2)**0.5
+
 
     # save the results
     results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
@@ -172,25 +173,27 @@ def runMain(w1Iter, w2Iter):
     with open('results/road_A_100kph_30sec_30Hz/time_traces/' + name, 'wb') as f:
         pkl.dump(results, f)
 
-    return cost_rms, cost_holding
+    return cost_rms, cost_holding, wrms([], output_history[:, 0])
 
 import matplotlib.pyplot as plt
 
 paraWeight = []
 paraComfort = []
+paraComfortWeighted = []
 paraHolding = []
 
 for id, val in enumerate(np.linspace(1e-2, 1e+6, 2)):
 
     print(f"=== {id:02d} ===")
 
-    comfort, holding = runMain(1, val)
+    comfort, holding, weighted_comfy = runMain(1, val)
 
     paraWeight.append(val)
     paraComfort.append(comfort)
     paraHolding.append(holding)
+    paraComfortWeighted.append(weighted_comfy)
 
-results = [paraWeight, paraComfort, paraHolding]
+results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
 name = f"results_weightSens.pkl"
 
