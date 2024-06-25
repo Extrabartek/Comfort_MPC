@@ -68,7 +68,7 @@ def rwrms(a_z, ts) -> np.ndarray:
     
     rwrms = np.zeros_like(a_w)
     
-    rwrms[0] = np.sqrt((1/dt)*(a_z[0]**2)*dt)
+    rwrms[0] = np.sqrt((a_z[0]**2))
     
     t_sum = np.cumsum(ts)
     
