@@ -36,7 +36,7 @@ Npfile = Np # file naming only, as Np is overwritten
 # Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
-V = 10 / 3.6  # velocity of the car [m/s]
+V = 100 / 3.6  # velocity of the car [m/s]
 tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
@@ -136,14 +136,13 @@ for i in range(n):
 
     next_state = A @ xf + B @ uf
     next_state_passive = A @ xfpass + B @ ufpass
-
     output = C @ xf + D @ uf
     output_passive = C @ xfpass + D @ ufpass
 
     state_quarter = state_setting(next_state, np.zeros((4, 1)))
     state_pass = state_setting(next_state_passive, np.zeros((4, 1)))
 
-    print(f"Deflection velocity states, Solve: {next_state[2] - next_state[3]}")
+
 
     # save the state
     delta_front.append(mpc[2])
