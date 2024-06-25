@@ -36,8 +36,8 @@ def half_car_state_space(par: Parameters):
                          1 / par.I * -par.l2 * par.csr, 0, 1 / par.I * -par.l1 * par.csf, 0,
                          1 / par.I * par.l2 * par.csr]])
 
-    D = np.array([[0, 0, 1 / par.ms, 1 / par.ms],
-                  [0, 0, -par.l1 / par.I, par.l2 / par.I]])
+    D = np.array([[0, 0, -1 / par.ms, -1 / par.ms],
+                  [0, 0, par.l1 / par.I, -par.l2 / par.I]])
 
 
     return [A, B, F, C, D]
