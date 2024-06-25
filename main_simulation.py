@@ -28,7 +28,7 @@ state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 # Time
 f = 200  # Hz
 dt = 1/f  # s
-endTime = 1  # s
+endTime = 5  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]
 Np = 10  # length of the prediction horizon in points
 Npfile = Np # file naming only, as Np is overwritten 
@@ -36,11 +36,11 @@ Npfile = Np # file naming only, as Np is overwritten
 # Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
-V = 100 / 3.6  # velocity of the car [m/s]
+V = 10 / 3.6  # velocity of the car [m/s]
 tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
-road_type = "bump"
+road_type = "iso"
 k = 3
 delay_samples = int((par.l1 + par.l2) / V * f)
 # Front bump
@@ -119,6 +119,9 @@ for i in range(n):
     road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
     # road_profile = np.array([[0], [0]])
 
+    state_history[i] = state_quarter
+    state_pass_history[i] = state_pass
+
     mpc = quarter_car(par, Np, dt, state_quarter, prediction_road_profile[:, 0], prediction_road_profile[:, 1], single=True)
     force = np.array([[mpc[0]], [mpc[1]]])
 
@@ -140,11 +143,12 @@ for i in range(n):
     state_quarter = state_setting(next_state, np.zeros((4, 1)))
     state_pass = state_setting(next_state_passive, np.zeros((4, 1)))
 
+    print(f"Deflection velocity states, Solve: {next_state[2] - next_state[3]}")
+
     # save the state
     delta_front.append(mpc[2])
     delta_rear.append(mpc[3])
-    state_history[i] = state_quarter
-    state_pass_history[i] = state_pass
+
     output_history[i] = np.array([[output[0, 0]], [output[1, 0]], [0], [0]])
     output_pass_history[i] = np.array([[output_passive[0, 0]], [output_passive[1, 0]], [0], [0]])
     u_history[i] = np.array([[force[0, 0]], [force[1, 0]]])

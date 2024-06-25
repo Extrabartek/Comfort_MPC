@@ -7,9 +7,11 @@ from state_space_half_car import Parameters
 
 def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArray, A: npt.NDArray, B: npt.NDArray, C: npt.NDArray, D: npt.NDArray, Q: npt.NDArray, R: npt.NDArray):
     # Params
-    eps = 1e-8
+    eps = 1e-16
     M = 100000
     # sigma = 6500 # [N]
+
+    print(f"Road profile, MPC: {w}")
 
     # Number of states (n) and inputs (m) and constraints (ncon)
     n = A.shape[0]
@@ -110,6 +112,9 @@ def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArra
     if model.status == GRB.OPTIMAL:
         u = []
         deltas = []
+        deflection_vel_states = A_tilde[2, 0:4] @ x + B_tilde[2, 0:2] * u_tilde[0:2].X \
+                              - A_tilde[3, 0:4] @ x + B_tilde[3, 0:2] * u_tilde[0:2].X
+        print(f"Deflection velocity states, MPC: {deflection_vel_states}")
         for i in range(Np):
             u.append(model.getVarByName(f'f_tilde[{i}]').X)
             deltas.append(round(model.getVarByName(f'delta[{i}]').X))
