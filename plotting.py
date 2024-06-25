@@ -58,20 +58,6 @@ def plot_quarter(name: str):
     except Exception as e:
         print(f"Error: {e}")
 
-    # plt.figure(figsize=(4, 3))
-    # sus_deflection = np.fft.fft(state_history[:, 0])
-    # sus_deflection_passive = ft.fft(state_pass_history[:, 0])
-    # freq = ft.fftfreq(state_pass_history[:, 0].size, d=(tValues[1] - tValues[0]))
-    # plt.loglog(freq, np.abs(sus_deflection), label='MPC')
-
-
-
-    # plt.figure(figsize=(4, 3))
-    # acc_freq = np.fft.fft(output_history[:, 0])
-    # acc_freq_pass = np.fft.fft(output_pass_history[:, 0])
-    # freq = np.fft.fftfreq(output_history[:, 0].size, d=tValues[1] - tValues[0])
-    #
-    # plt.plot(freq, ctrl.mag2db(np.abs(acc_freq/(tValues[1]-tValues[0]))*2/len(acc_freq)), label='MPC')
     # State Space
     A = np.array([
             [0, 0, 1, -1],
@@ -87,34 +73,22 @@ def plot_quarter(name: str):
         [0]
     ])
 
-    C = np.array([
+    C1 = np.array([
         [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
+    
+    C2 = np.array([[0, 1, 0, 0]])
 
     D = np.array([[0]])
-    w, mag, phase = signal.bode(signal.StateSpace(A, B, C, D))
-    #.plot(w, mag, label='State Space')
+
     plt.xlabel('Frequency [Hz]')
-    plt.ylabel('Magnitude [dB]')
-    result = ft.rfft(output_history[:, 0].ravel())
-    result_passive = ft.rfft(output_pass_history[:, 0].ravel())
-    road_result = ft.rfft(road_profile_front.ravel())
-    freq_welch = ft.rfftfreq(output_history[:, 0].size, d=(tValues[1] - tValues[0]))
-    freq_welch , result_welch = signal.welch(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
-    freq_welch , result_welch_active = signal.welch(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    plt.ylabel('PSD: Body acceleration [(m/s^2)^2/Hz] ')
     freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
     freq_psd, result_psd_active = signal.periodogram(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
-    # plt.loglog(freq, abs(2 * result), label='Active')
-    # plt.loglog(freq, (abs((tValues[1] - tValues[0])*2 * result_passive) ** 2)/(2 * (freq[1] - freq[0])), label='Passive')
     plt.loglog(freq_psd, result_psd, label='Passive PSD')
     plt.loglog(freq_psd, result_psd_active, label='Active PSD')
-    # plt.loglog(freq_welch, result_welch, label='Passive Welch')
-    # plt.loglog(freq_welch, result_welch_active, label='Active Welch')
-    # plt.semilogx(w, mag, label='State Space')
-    plt.xlabel('Frequency [Hz]')
     plt.legend()
     plt.xlim([1e-2, 25])
     plt.hlines(1, 0, 1000, linestyle='--')
-    plt.ylabel('Magnitude [dB]')
     plt.ylim([1e-9, 1e1])
     plt.grid()
     plt.title('This should work')
