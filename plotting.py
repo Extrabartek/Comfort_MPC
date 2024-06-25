@@ -210,5 +210,5 @@ if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
-    plot_quarter("results_type_iso_endT_5_f_30_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_iso_endT_5_f_200_tl_0.1_Np_10_quarter.pkl")
 
