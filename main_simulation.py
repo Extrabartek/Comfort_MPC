@@ -26,7 +26,7 @@ state_quarter = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]
 state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
-f = 200  # Hz
+f = 30  # Hz
 dt = 1/f  # s
 endTime = 5  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]

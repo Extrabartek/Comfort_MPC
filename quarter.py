@@ -19,7 +19,7 @@ def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArra
     ncon = C.shape[0]
 
 
-    A_tilde = np.vstack([np.linalg.matrix_power(A, i+1) for i in range(Np)])
+    A_tilde = np.vstack([np.linalg.matrix_power(A, i) for i in range(Np)])
     A_c_tilde = np.vstack([C @ np.linalg.matrix_power(A, i) for i in range(Np)])
     B_c_tilde = np.zeros((ncon*Np, m*Np))
     B_tilde = np.zeros((n*Np, m*Np))
@@ -30,13 +30,10 @@ def solve(cs: float, cmin: float, cmax: float, Np, x: npt.NDArray, w: npt.NDArra
         for j in range(i+1):
             if i-j <= 0:
                 B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = np.zeros((ncon, m))
-
-            else:
-                B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j-1) @ B
-            if i-j < 0:
                 B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.zeros((n, m))
             else:
-                B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j) @ B
+                B_c_tilde[i*ncon:(i+1)*ncon, j*m:(j+1)*m] = C @ np.linalg.matrix_power(A, i-j-1) @ B
+                B_tilde[i*n:(i+1)*n, j*m:(j+1)*m] = np.linalg.matrix_power(A, i-j-1) @ B
         D_tilde[i * ncon: (i + 1) * ncon, i * m: (i + 1) * m] = D
         Q_tilde[i * ncon: (i + 1) * ncon, i * ncon: (i + 1) * ncon] = Q
         R_tilde[i * m: (i + 1) * m, i * m: (i + 1) * m] = R
