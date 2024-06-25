@@ -11,6 +11,8 @@ par = Parameters(960, 1222, 40, 45, 200000,
                  200000, 18000, 22000, 1000,
                  1000, 1000/1.5, 1000*1.5, 1.3, 1.5)
 
+par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000, 29500, 29500, 1500, 1500, 300, 4000, 1.3, 1.5)
+
 # List of states:
 # 1 - suspension deflection of the front car body
 # 2 - vertical velocity of the front car body
@@ -25,8 +27,8 @@ state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
 f = 200  # Hz
-dt = 1/f # s
-endTime = 10  # s
+dt = 1/f  # s
+endTime = 5  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]
 Np = 10  # length of the prediction horizon in points
 Npfile = Np # file naming only, as Np is overwritten 
@@ -34,8 +36,8 @@ Npfile = Np # file naming only, as Np is overwritten
 # Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
-V = 100 / 3.6  # velocity of the car [m/s]
-tl = 0.02  # time of the bump [s]
+V = 10 / 3.6  # velocity of the car [m/s]
+tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
 road_type = "iso"
@@ -117,6 +119,9 @@ for i in range(n):
     road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
     # road_profile = np.array([[0], [0]])
 
+    state_history[i] = state_quarter
+    state_pass_history[i] = state_pass
+
     mpc = quarter_car(par, Np, dt, state_quarter, prediction_road_profile[:, 0], prediction_road_profile[:, 1], single=True)
     force = np.array([[mpc[0]], [mpc[1]]])
 
@@ -138,11 +143,12 @@ for i in range(n):
     state_quarter = state_setting(next_state, np.zeros((4, 1)))
     state_pass = state_setting(next_state_passive, np.zeros((4, 1)))
 
+    print(f"Deflection velocity states, Solve: {next_state[2] - next_state[3]}")
+
     # save the state
     delta_front.append(mpc[2])
     delta_rear.append(mpc[3])
-    state_history[i] = state_quarter
-    state_pass_history[i] = state_pass
+
     output_history[i] = np.array([[output[0, 0]], [output[1, 0]], [0], [0]])
     output_pass_history[i] = np.array([[output_passive[0, 0]], [output_passive[1, 0]], [0], [0]])
     u_history[i] = np.array([[force[0, 0]], [force[1, 0]]])

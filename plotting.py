@@ -1,4 +1,6 @@
+import control
 import numpy as np
+import scipy.fft as ft
 from scipy.fft import fft, ifft
 from scipy.signal import freqresp
 from scipy.signal import TransferFunction as tf
@@ -56,22 +58,6 @@ def plot_quarter(name: str):
     except Exception as e:
         print(f"Error: {e}")
 
-    plt.figure(figsize=(4, 3))
-    sus_deflection = np.fft.fft(state_history[:, 0])
-    sus_deflection_passive = np.fft.fft(state_pass_history[:, 0])
-    freq = np.fft.fftfreq(state_history[:, 0].size, d=tValues[1] - tValues[0])
-    plt.loglog(freq, np.abs(sus_deflection), label='MPC')
-    plt.loglog(freq, np.abs(sus_deflection_passive), label='Passive')
-    plt.xlabel('Frequency [Hz]')
-    plt.ylabel('Magnitude [dB]')
-
-
-    plt.figure(figsize=(4, 3))
-    acc_freq = np.fft.fft(output_history[:, 0])
-    acc_freq_pass = np.fft.fft(output_pass_history[:, 0])
-    freq = np.fft.fftfreq(output_history[:, 0].size, d=tValues[1] - tValues[0])
-
-    plt.plot(freq, ctrl.mag2db(np.abs(acc_freq)*2/len(acc_freq)), label='MPC')
     # State Space
     A = np.array([
             [0, 0, 1, -1],
@@ -87,14 +73,25 @@ def plot_quarter(name: str):
         [0]
     ])
 
-    C = np.array([
+    C1 = np.array([
         [-par.ksf/(par.ms/2), 0, -par.csf/(par.ms/2), par.csf/(par.ms/2)]])
+    
+    C2 = np.array([[0, 1, 0, 0]])
 
     D = np.array([[0]])
-    w, mag, phase = signal.bode(signal.StateSpace(A, B, C, D))
-    #.plot(w, mag, label='State Space')
+
     plt.xlabel('Frequency [Hz]')
-    plt.ylabel('Magnitude [dB]')
+    plt.ylabel('PSD: Body acceleration [(m/s^2)^2/Hz] ')
+    freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    freq_psd, result_psd_active = signal.periodogram(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    plt.loglog(freq_psd, result_psd, label='Passive PSD')
+    plt.loglog(freq_psd, result_psd_active, label='Active PSD')
+    plt.legend()
+    plt.xlim([1e-2, 25])
+    plt.hlines(1, 0, 1000, linestyle='--')
+    plt.ylim([1e-9, 1e1])
+    plt.grid()
+    plt.title('This should work')
 
 
     plt.figure(figsize=(12, 12))
@@ -212,5 +209,6 @@ def plot_quarter(name: str):
 if __name__ == "__main__":
     #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
-    plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
+    # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
+    plot_quarter("results_type_iso_endT_5_f_200_tl_0.1_Np_10_quarter.pkl")
 
