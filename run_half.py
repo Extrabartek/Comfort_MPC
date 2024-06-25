@@ -5,6 +5,7 @@ from scipy.signal import cont2discrete
 from roadsurface import isolatedBump, isolatedTable, isoRoad, isolatedCircle
 from state_space_half_car import half_car_state_space, Parameters
 from half import half_car
+from quarter import quarter_car, state_mapping, state_setting
 from metrics import wrms
 
 par = Parameters(960, 1222, 40, 45, 200000,
@@ -23,6 +24,7 @@ par = Parameters(630, 1222, 37.5, 37.5, 210000, 210000, 29500, 29500, 1500, 1500
 # 7 - tire deflection of the rear car body
 # 8 - vertical velocity of the rear wheel
 state_half = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+state_quarter = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
@@ -74,10 +76,13 @@ D = ssh[3]
 # Simulation
 n = len(tValues)  # number of samples
 state_history = np.zeros((n, 8, 1))  # state history
+state_quarter_history = np.zeros((n, 8, 1))  # quarter state history
 state_pass_history = np.zeros((n, 8, 1))  # passive state history
 output_history = np.zeros((n, 4, 1))  # acceleration history
+output_quarter_history = np.zeros((n, 4, 1))  # quarter acceleration history
 output_pass_history = np.zeros((n, 4, 1))  # passive acceleration history
 u_history = np.zeros((n, 2, 1))  # control input history
+u_quarter_history = np.zeros((n, 2, 1))  # quarter control input history
 
 # generate road profile derivatives
 road_profile_derivative_front = np.gradient(road_profile_front, dt)
@@ -100,21 +105,30 @@ for i in range(n):
     road_profile = np.array([[road_profile_derivative_front[i]], [road_profile_derivative_rear[i]]])
 
     state_history[i] = state_half
+    state_quarter_history[i] = state_quarter
     state_pass_history[i] = state_pass
 
     mpc = half_car(par, Np, dt, state_half, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
     force = np.array([[mpc[0]], [mpc[1]]])
 
+    mpc2 = quarter_car(par, Np, dt, state_quarter, prediction_road_profile[:, 0], prediction_road_profile[:, 1])
+    force2 = np.array([[mpc2[0]], [mpc2[1]]])
+
     u = np.array([[road_profile[0, 0]], [road_profile[1, 0]], [force[0, 0]], [force[1, 0]]])
+
+    u_quarter = np.array([[road_profile[0, 0]], [road_profile[1, 0]], [force2[0, 0]], [force2[1, 0]]])
 
     upass = np.array([[road_profile[0, 0]], [road_profile[1, 0]], [0], [0]])
 
     next_state = A @ state_half + B @ u
+    next_state_quarter = A @ state_quarter + B @ u_quarter
     next_state_passive = A @ state_pass + B @ upass
     output = C @ state_half + D @ u
+    output_quarter = C @ state_quarter + D @ u_quarter
     output_passive = C @ state_pass + D @ upass
 
     state_half = next_state
+    state_quarter = next_state_quarter
     state_pass = next_state_passive
 
 
@@ -124,22 +138,28 @@ for i in range(n):
     delta_rear.append(mpc[3])
 
     output_history[i] = np.array([[output[0, 0]], [output[1, 0]], [0], [0]])
+    output_quarter_history[i] = np.array([[output_quarter[0, 0]], [output_quarter[1, 0]], [0], [0]])
     output_pass_history[i] = np.array([[output_passive[0, 0]], [output_passive[1, 0]], [0], [0]])
     u_history[i] = np.array([[force[0, 0]], [force[1, 0]]])
+    u_quarter_history[i] = np.array([[force2[0, 0]], [force2[1, 0]]])
     print(f"Step {i} of {n}")
 
 damping_force_history = par.csf * (state_history[:, 1] - state_history[:, 5]) + u_history[:, 0]
+damping_force_quarter = par.csf * (state_quarter_history[:, 1] - state_quarter_history[:, 5]) + u_quarter_history[:, 0]
 damping_force_passive = par.csf * (state_pass_history[:, 1] - state_pass_history[:, 5])
 deflection_velocity = state_history[:, 1] - state_history[:, 5]
 deflection_velocity_passive = state_pass_history[:, 1] - state_pass_history[:, 5]
+deflection_velocity_quarter = state_quarter_history[:, 1] - state_quarter_history[:, 5]
 
 print(f"Active wrms: {wrms([], output_history[:, 0])}")
+print(f"Quarter wrms: {wrms([], output_quarter_history[:, 0])}")
 print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
 
 # save the results
 results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,
            damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history,
-           output_pass_history, par.csf, par.csr, par.csmin, par.csmax, par]
+           output_pass_history, par.csf, par.csr, par.csmin, par.csmax, par, 
+           state_quarter_history, output_quarter_history, u_quarter_history, damping_force_quarter, deflection_velocity_quarter]
 
 # create a name for the file, based variables like endTime, f, tl, NP etc.
 name = f"results_type_{road_type}_endT_{endTime}_f_{f}_tl_{tl}_Np_{Npfile}_quarter.pkl"
