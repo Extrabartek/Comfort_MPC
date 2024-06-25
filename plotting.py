@@ -190,19 +190,79 @@ def plot_quarter(name: str):
     plt.tight_layout()
     plt.show()
 
-def regenerate_results():
+def regenerate_D_results():
     paraWeight = []
     paraComfort = []
     paraComfortWeighted = []
     paraHolding = []
-    i = 0
-    lin = np.linspace(1e-2, 5e+5, 20)
-    for i in lin:
-        with open(f"results/road_A_100kph_30sec_30Hz/time_traces/results_w1_1_w2_{i}.pkl", 'rb') as file:
+
+    files = ['0.01', 
+             '26315.798947368417', 
+             '52631.58789473684', 
+             '78947.37684210525', 
+             '105263.16578947367', 
+             '131578.9547368421', 
+             '157894.74368421052', 
+             '184210.53263157894', 
+             '210526.32157894736', 
+             '236842.11052631578', 
+             '263157.8994736842', 
+             '289473.68842105265', 
+             '315789.47736842104', 
+             '342105.2663157894', 
+             '368421.0552631579', 
+             '394736.8442105263', 
+             '421052.6331578947', 
+             '447368.4221052631', 
+             '473684.21105263155', 
+             '500000.0']
+    for f in files:
+        with open(f"results/road_D_25kph_30sec_30Hz/time_traces/results_w1_1_w2_{f}.pkl", 'rb') as file:
             state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
                 file)
 
-        paraWeight.append(i)
+        paraWeight.append(float(f))
+        paraComfort.append(rms(output_history[:, 0]))
+        paraHolding.append(rms(output_history[:, 1]))
+        paraComfortWeighted.append(wrms([], output_history[:, 0]))
+
+    results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
+
+    with open('results/road_D_25kph_30sec_30Hz/results_weightSens.pkl', 'wb') as f:
+        pkl.dump(results, f)
+
+def regenerate_A_results():
+    paraWeight = []
+    paraComfort = []
+    paraComfortWeighted = []
+    paraHolding = []
+
+    files = ['0.01', 
+             '26315.798947368417', 
+             '52631.58789473684', 
+             '78947.37684210525', 
+             '105263.16578947367', 
+             '131578.9547368421', 
+             '157894.74368421052', 
+             '184210.53263157894', 
+             '210526.32157894736', 
+             '236842.11052631578', 
+             '263157.8994736842', 
+             '289473.68842105265', 
+             '315789.47736842104', 
+             '342105.2663157894', 
+             '368421.0552631579', 
+             '394736.8442105263', 
+             '421052.6331578947', 
+             '447368.4221052631', 
+             '473684.21105263155', 
+             '500000.0']
+    for f in files:
+        with open(f"results/road_A_100kph_30sec_30Hz/time_traces/results_w1_1_w2_{f}.pkl", 'rb') as file:
+            state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
+                file)
+
+        paraWeight.append(float(f))
         paraComfort.append(rms(output_history[:, 0]))
         paraHolding.append(rms(output_history[:, 1]))
         paraComfortWeighted.append(wrms([], output_history[:, 0]))
@@ -210,6 +270,47 @@ def regenerate_results():
     results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
     with open('results/road_A_100kph_30sec_30Hz/results_weightSens.pkl', 'wb') as f:
+        pkl.dump(results, f)
+
+def regenerate_bump_results():
+    paraWeight = []
+    paraComfort = []
+    paraComfortWeighted = []
+    paraHolding = []
+
+    files = ['0.01', 
+             '26315.798947368417', 
+             '52631.58789473684', 
+             '78947.37684210525', 
+             '105263.16578947367', 
+             '131578.9547368421', 
+             '157894.74368421052', 
+             '184210.53263157894', 
+             '210526.32157894736', 
+             '236842.11052631578', 
+             '263157.8994736842', 
+             '289473.68842105265', 
+             '315789.47736842104', 
+             '342105.2663157894', 
+             '368421.0552631579', 
+             '394736.8442105263', 
+             '421052.6331578947', 
+             '447368.4221052631', 
+             '473684.21105263155', 
+             '500000.0']
+    for f in files:
+        with open(f"results/bump_20kph_3sec_500Hz/time_traces/results_w1_1_w2_{f}.pkl", 'rb') as file:
+            state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
+                file)
+
+        paraWeight.append(float(f))
+        paraComfort.append(rms(output_history[:, 0]))
+        paraHolding.append(rms(output_history[:, 1]))
+        paraComfortWeighted.append(wrms([], output_history[:, 0]))
+
+    results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
+
+    with open('results/bump_20kph_3sec_500Hz/results_weightSens.pkl', 'wb') as f:
         pkl.dump(results, f)
 
 def plot_sensitivity(name: str, plot=True):
@@ -238,8 +339,10 @@ if __name__ == "__main__":
     # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
     # plot_quarter("results_type_iso_endT_10_f_200_tl_0.02_Np_10_quarter.pkl")
     #plot_quarter("results_type_bump_endT_2_f_500_tl_0.3_Np_10_quarter.pkl")
+    regenerate_A_results()
+    regenerate_D_results()
+    regenerate_bump_results()
     plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     plot_sensitivity('bump_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
     plt.show()
-    # regenerate_results()
