@@ -236,10 +236,10 @@ def plot_quarter(name: str):
     active_wrmq = wrmq(output_history[:, 0], 1/(tValues[1]-tValues[0]))
     passive_wrmq = wrmq(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
 
-    print(f"WRMQ: {active_wrmq}, Passive: {passive_wrmq}, diff: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
+    print(f"WRMQ: {active_wrmq}, Passive: {passive_wrmq}, diff: {100 * (passive_wrmq - active_wrmq) / passive_wrmq} %")
 
-    road_rms = rms(output_history[:, 1], 1/(tValues[1]-tValues[0]))
-    road_passive_rms = rms(output_pass_history[:, 1], 1/(tValues[1]-tValues[0]))
+    road_rms = rms(output_history[:, 1])
+    road_passive_rms = rms(output_pass_history[:, 1])
 
     print(f"RMS: {road_rms}, Passive: {road_passive_rms}, diff: {100 * (road_passive_rms - road_rms) / road_passive_rms} %")
 
@@ -458,13 +458,14 @@ def plot_quarter(name: str):
     plt.figure()
     plt.scatter(deflection_velocity, damping_force_history, label='Active', color="#1192e8", alpha=0.75, s=15)
     plt.scatter(deflection_velocity_passive, damping_force_passive, label='Passive', color="#da1e28", marker="D", alpha=0.95, s=15)
-    z_values_range = np.linspace(np.min(deflection_velocity), np.max(deflection_velocity), num=len(deflection_velocity))
+    z_values_range = np.linspace(np.min(deflection_velocity)*10, np.max(deflection_velocity)*10, num=len(deflection_velocity))
     plt.plot(z_values_range, z_values_range*csf, linestyle='-', color='#1c0f30', label='Nominal Damper', linewidth=1.5)
     plt.plot(z_values_range, z_values_range*csmax, linestyle='-.', color='#1c0f30', label='Active Damper Envelope', linewidth=1.5)
     plt.plot(z_values_range, z_values_range*csmin, linestyle='-.', color='#1c0f30')
     plt.xlabel(r'Suspension Velocity [$m/s$]', fontsize=11)
     plt.ylabel(r'Damping Force [$N$]', fontsize=11)
     plt.ylim([damping_force_history.min()*1.1, damping_force_history.max()*1.1])
+    plt.xlim([deflection_velocity.min()*1.1, deflection_velocity.max()*1.1])
     plt.grid()
     plt.legend()
     
@@ -653,8 +654,8 @@ def plot_sensitivity(name: str, plot=True):
 
 if __name__ == "__main__":
     plot_quarter("results_type_isoD_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
-    plot_quarter("results_type_isoA_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
-    plot_quarter("results_type_bump_endT_10_f_500_tl_0.1_Np_10_quarter.pkl")
+    # plot_quarter("results_type_isoA_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
+    # plot_quarter("results_type_bump_endT_10_f_500_tl_0.1_Np_10_quarter.pkl")
 
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
