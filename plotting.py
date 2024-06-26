@@ -490,9 +490,48 @@ def plot_quarter(name: str):
     plt.ylim([damping_force_history.min()*1.1, damping_force_history.max()*1.1])
     plt.grid()
     plt.legend()
-    
+
 
     plt.show()
+
+def plot_different_np(files: list[str]):
+    results = []
+    for file_name in files:
+        try:
+            # Load the results
+            with open("results/" + file_name, 'rb') as file:
+                state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
+                    file)
+        except Exception as e:
+            print(f"Error: {e}")
+
+        result = {"state_history": state_history, "output_history": output_history, "u_history": u_history,
+                  "road_profile_front": road_profile_front, "road_profile_rear": road_profile_rear,
+                  "damping_force_history": damping_force_history, "deflection_velocity": deflection_velocity,
+                  "damping_force_passive": damping_force_passive,
+                  "deflection_velocity_passive": deflection_velocity_passive, "tValues": tValues,
+                  "state_pass_history": state_pass_history, "output_pass_history": output_pass_history, "csf": csf,
+                  "csr": csr, "csmin": csmin, "csmax": csmax, "par": par}
+        results.append(result)
+        print("Results loaded successfully")
+
+    plt.figure()
+    plt.xlabel(r'Frequency [$Hz$]', fontsize=11)
+    plt.ylabel(r"PSD: Body acceleration [$(m/s^2)^2Hz$]", fontsize=11)
+    fs = 1 / (results[0]['tValues'][1] - results[0]['tValues'][0])
+    freq_psd, psd_pass = signal.welch(get_a_w(results[0]['output_pass_history'][:, 0].ravel(), fs=fs)[0], fs=fs)
+    plt.loglog(freq_psd, psd_pass, label='Passive')
+    freq_psd, psd_2 = signal.welch(get_a_w(results[0]['output_history'][:, 0].ravel(), fs=fs)[0], fs=fs)
+    plt.loglog(freq_psd, psd_2, label='Np = 2')
+    freq_psd, psd_10 = signal.welch(get_a_w(results[1]['output_history'][:, 0].ravel(), fs=fs)[0], fs=fs)
+    plt.loglog(freq_psd, psd_10, label='Np = 10')
+    freq_psd, psd_20 = signal.welch(get_a_w(results[2]['output_history'][:, 0].ravel(), fs=fs)[0], fs=fs)
+    plt.loglog(freq_psd, psd_20, label='Np = 20')
+    plt.xlim([0.4, 16])
+    plt.hlines(1, 0, 1000, linestyle='--', colors='black')
+    plt.legend()
+    plt.ylim([1e-4, 5e0])
+    plt.grid()
 
 def regenerate_D_results():
     paraWeight = []
@@ -679,11 +718,13 @@ if __name__ == "__main__":
 
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
-
+    plot_different_np(["results_type_iso_D_endT_120_f_30_tl_2_Np_2_quarter.pkl",
+                       "results_type_iso_D_endT_120_f_30_tl_2_Np_10_quarter.pkl",
+                       "results_type_iso_D_endT_120_f_30_tl_2_Np_20_quarter.pkl"])
     # regenerate_A_results()
     # regenerate_D_results()
-    # regenerate_bump_results()
-    plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    # # regenerate_A2_results()
+    # plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
-    # plot_sensitivity('bump_20kph_10sec_500Hz/results_weightSens.pkl', plot=False)
+    # plot_sensitivity('road_A_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
     plt.show()
