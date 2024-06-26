@@ -22,9 +22,9 @@ def runMain(w1Iter, w2Iter):
     state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
     # Time
-    f = 500  # Hz
+    f = 30  # Hz
     dt = 1/f  # s
-    endTime = 3  # s
+    endTime = 30  # s
     tValues = np.arange(0, endTime, dt)  # the time array [s]
     Np = 10  # length of the prediction horizon in points
     Npfile = Np # file naming only, as Np is overwritten 
@@ -32,12 +32,12 @@ def runMain(w1Iter, w2Iter):
     # Bump parameters (dependent on bump profile)
     A = 0.1  # amplitude of the bump [m]
     L = 0.5  # length of the bump [m]
-    V = 20 / 3.6  # velocity of the car [m/s]
+    V = 25 / 3.6  # velocity of the car [m/s]
     tl = 0.1  # time of the bump [s]
 
     l = tl * V  # position of the bump [m]
-    road_type = "bump"
-    k = 3
+    road_type = "iso"
+    k = 5
     delay_samples = int((par.l1 + par.l2) / V * f)
     # Front bump
     match road_type:
@@ -170,10 +170,10 @@ def runMain(w1Iter, w2Iter):
     # create a name for the file, based variables like endTime, f, tl, NP etc.
     name = f"results_w1_{w1Iter}_w2_{w2Iter}.pkl"
 
-    with open('results/bump_20kph_3sec_500Hz/time_traces/' + name, 'wb') as f:
+    with open('results/road_D_25kph_30sec_30Hz/time_traces/' + name, 'wb') as f:
         pkl.dump(results, f)
 
-    return cost_rms, cost_holding, wrms(output_history[:, 0], f)
+    return cost_rms, cost_holding, wrms(output_history[:, 0], 1/(tValues[1]-tValues[0]))
 
 import matplotlib.pyplot as plt
 
@@ -182,7 +182,7 @@ paraComfort = []
 paraComfortWeighted = []
 paraHolding = []
 
-for id, val in enumerate([0.0101]):
+for id, val in enumerate([3000]):
 
     print(f"=== {id:02d} ===")
 
@@ -197,7 +197,7 @@ results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
 name = f"results_weightSens.pkl"
 
-with open('results/bump_20kph_3sec_500Hz/' + name, 'wb') as f:
+with open('results/road_D_25kph_30sec_30Hz/' + name, 'wb') as f:
     pkl.dump(results, f)
 
 plt.scatter(paraHolding, paraComfort, c=paraWeight, cmap='viridis')
