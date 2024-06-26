@@ -11,6 +11,11 @@ from metrics import get_a_w, rms, wrms
 import pickle as pkl
 from metrics import wrms, wrmq
 
+# Other styles
+# plt.style.use('ggplot')
+# plt.style.use('tableau-colorblind10')
+plt.style.use('seaborn-v0_8-paper')
+# print(plt.style.available)
 
 def plot_spectrum_comparison(a_z):
     a_w, w = get_a_w(a_z)
@@ -349,20 +354,20 @@ def plot_quarter(name: str):
     plt.grid()
     plt.legend(fontsize=16)
 
-    plt.figure(figsize=(10, 10))
-    plt.scatter(deflection_velocity_passive, damping_force_passive, label='Passive Damper', color='red')
-    plt.scatter(deflection_velocity, damping_force_history, label='Active Damper')
+    plt.figure(figsize=(10, 6))
+    plt.scatter(deflection_velocity, damping_force_history, label='Active Damper', color="#1192e8", alpha=0.75, s=15)
+    plt.scatter(deflection_velocity_passive, damping_force_passive, label='Passive Damper', color="#da1e28", marker="D", alpha=0.95, s=15)
     # need to add parameters as a saved value
     z_values_range = np.linspace(np.min(deflection_velocity), np.max(deflection_velocity), num=len(deflection_velocity))
-    plt.plot(z_values_range, z_values_range*csf, linestyle='--', color='black', label='Passive Damper')
-    plt.plot(z_values_range, z_values_range*csmax, linestyle='--', color='red', label='Max Active Damper')
-    plt.plot(z_values_range, z_values_range*csmin, linestyle='--', color='blue', label='Min Active Damper')
-    plt.xlabel('Suspension Velocity [m/s]', fontsize=20)
-    plt.ylabel('Damping Force [N]', fontsize=20)
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
+    plt.plot(z_values_range, z_values_range*csf, linestyle='-', color='#1c0f30', label='Nominal Damper', linewidth=1.5)
+    plt.plot(z_values_range, z_values_range*csmax, linestyle='-.', color='#1c0f30', label='Active Damper Envelope', linewidth=1.5)
+    plt.plot(z_values_range, z_values_range*csmin, linestyle='-.', color='#1c0f30')
+    plt.xlabel('Suspension Velocity [m/s]', fontsize=16)
+    plt.ylabel('Damping Force [N]', fontsize=16)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
     plt.grid()
-    plt.legend(fontsize=20)
+    plt.legend(fontsize=16)
     plt.tight_layout()
     # plt.show()
     ##################################################
@@ -542,7 +547,7 @@ def plot_sensitivity(name: str, plot=True):
 
 
 if __name__ == "__main__":
-    plot_quarter("results_type_isoA_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_isoD_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
 
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
