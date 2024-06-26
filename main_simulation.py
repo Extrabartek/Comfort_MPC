@@ -21,9 +21,9 @@ state_quarter = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]
 state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
-f = 500  # Hz
+f = 30  # Hz
 dt = 1/f  # s
-endTime = 10  # s
+endTime = 120  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]
 Np = 10  # length of the prediction horizon in points
 Npfile = Np # file naming only, as Np is overwritten 
@@ -31,12 +31,12 @@ Npfile = Np # file naming only, as Np is overwritten
 # Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
-V = 20 / 3.6  # velocity of the car [m/s]
+V = 100 / 3.6  # velocity of the car [m/s]
 tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
-road_type = "bump"
-k = 3
+road_type = "iso"
+k = 5
 delay_samples = int((par.l1 + par.l2) / V * f)
 # Front bump
 match road_type:
@@ -117,7 +117,7 @@ for i in range(n):
     state_history[i] = state_quarter
     state_pass_history[i] = state_pass
 
-    mpc = quarter_car(par, Np, dt, state_quarter, prediction_road_profile[:, 0], prediction_road_profile[:, 1], single=True)
+    mpc = quarter_car(par, Np, dt, state_quarter, prediction_road_profile[:, 0], prediction_road_profile[:, 1], single=True, w1=1, w2=17500)
     force = np.array([[mpc[0]], [mpc[1]]])
 
     uf = np.array([[road_profile[0, 0]], [force[0, 0]]])
@@ -162,7 +162,7 @@ results = [state_history, output_history, u_history, road_profile_front, road_pr
            output_pass_history, par.csf, par.csr, par.csmin, par.csmax, par]
 
 # create a name for the file, based variables like endTime, f, tl, NP etc.
-name = f"results_type_{road_type}_endT_{endTime}_f_{f}_tl_{tl}_Np_{Npfile}_quarter.pkl"
+name = f"results_type_{road_type}D_endT_{endTime}_f_{f}_tl_{tl}_Np_{Npfile}_quarter.pkl"
 
 with open('results/' + name, 'wb') as f:
     pkl.dump(results, f)
