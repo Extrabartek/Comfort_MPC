@@ -354,6 +354,62 @@ def plot_quarter(name: str):
     plt.grid()
     plt.legend(fontsize=16)
 
+
+
+    # time trace simplified
+    time_trace_length = 150
+    plt.figure(figsize=(10, 6))
+    plt.subplot(2,1,1)
+    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
+    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(2, 1, 2)
+    try:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
+    except:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Displacement [m]')
+    plt.grid()
+    plt.legend()
+
+    # time trace apendix
+    time_trace_length = 150
+    plt.figure(figsize=(10, 6))
+    plt.subplot(3,1,1)
+    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
+    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(3, 1, 2)
+    plt.plot(tValues[:time_trace_length], u_history[:, 0][:time_trace_length], label='Control Input')
+    plt.plot(tValues[:time_trace_length], damping_force_history[:time_trace_length], label='Total damping force - Active Damper')
+    # plt.plot(tValues[:time_trace_length], damping_force_passive[:time_trace_length], label='Total damping force - Passive Damper')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Force [N]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(3, 1, 3)
+    try:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
+    except:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Displacement [m]')
+    plt.grid()
+    plt.legend()
+
+
+
+
     plt.figure(figsize=(10, 6))
     plt.scatter(deflection_velocity, damping_force_history, label='Active Damper', color="#1192e8", alpha=0.75, s=15)
     plt.scatter(deflection_velocity_passive, damping_force_passive, label='Passive Damper', color="#da1e28", marker="D", alpha=0.95, s=15)
@@ -552,10 +608,10 @@ if __name__ == "__main__":
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
 
-    regenerate_A_results()
-    regenerate_D_results()
+    # regenerate_A_results()
+    # regenerate_D_results()
     # regenerate_A2_results()
-    plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
-    plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    # plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
     plt.show()
