@@ -231,16 +231,51 @@ def plot_quarter(name: str):
     active_wrms = wrms(output_history[:, 0], 1/(tValues[1]-tValues[0]))
     passive_wrms = wrms(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
 
-    print(f"The percentage improvement in WRMS is: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
+    print(f"WRMS: {active_wrms}, Passive: {passive_wrms}, diff: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
 
-    active_wrms = wrmq(output_history[:, 0], 1/(tValues[1]-tValues[0]))
-    passive_wrms = wrmq(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
+    active_wrmq = wrmq(output_history[:, 0], 1/(tValues[1]-tValues[0]))
+    passive_wrmq = wrmq(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
 
-    print(f"The percentage improvement in WRMQ is {100 * (passive_wrms - active_wrms) / passive_wrms} %")
+    print(f"WRMQ: {active_wrmq}, Passive: {passive_wrmq}, diff: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
 
+    road_rms = rms(output_history[:, 1], 1/(tValues[1]-tValues[0]))
+    road_passive_rms = rms(output_pass_history[:, 1], 1/(tValues[1]-tValues[0]))
+
+    print(f"RMS: {road_rms}, Passive: {road_passive_rms}, diff: {100 * (road_passive_rms - road_rms) / road_passive_rms} %")
 
     ##################################################
     # PSD BODY ACCELERATION
+    plt.figure()
+    plt.xlabel(r'Frequency [$Hz$]', fontsize=11)
+    plt.ylabel(r"PSD: Body acceleration [$(m/s^2)^2Hz$]", fontsize=11)
+    freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    freq_psd, result_psd_active = signal.periodogram(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    plt.loglog(freq_psd, result_psd, label='Passive PSD')
+    plt.loglog(freq_psd, result_psd_active, label='Active PSD')
+    # freq_psd, result_psd = signal.welch(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    # freq_psd, result_psd_active = signal.welch(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    # plt.loglog(freq_psd, result_psd, label='Passive')
+    # plt.loglog(freq_psd, result_psd_active, label='Active')
+    freq_psd, result_psd = signal.periodogram(get_a_w(output_pass_history[:, 0].ravel(), 1/(tValues[1]-tValues[0]))[0],
+                                              fs=1 / (tValues[1] - tValues[0]))
+    freq_psd, result_psd_active = signal.periodogram(get_a_w(output_history[:, 0].ravel(), 1/(tValues[1]-tValues[0]))[0],
+                                                     fs=1 / (tValues[1] - tValues[0]))
+    plt.loglog(freq_psd, result_psd, label='Weighted Passive PSD')
+    plt.loglog(freq_psd, result_psd_active, label='Weighted Active PSD')
+    # freq_psd, result_psd = signal.welch(get_a_w(output_pass_history[:, 0].ravel(), 1/(tValues[1]-tValues[0]))[0],
+    #                                     fs=1 / (tValues[1] - tValues[0]))
+    # freq_psd, result_psd_active = signal.welch(get_a_w(output_history[:, 0].ravel(), 1/(tValues[1]-tValues[0]))[0],
+    #                                               fs=1 / (tValues[1] - tValues[0]))
+    # plt.loglog(freq_psd, result_psd, label='Weighted Passive')
+    # plt.loglog(freq_psd, result_psd_active, label='Weighted Active')
+    plt.legend()
+    plt.xlim([0.4, 16])
+    plt.hlines(1, 0, 1000, linestyle='--', colors='black')
+    plt.ylim([1e-4, 5e0])
+    plt.grid()
+
+    ##################################################
+    # PSD BODY ACCELERATION WELCH
     plt.figure()
     plt.xlabel(r'Frequency [$Hz$]', fontsize=11)
     plt.ylabel(r"PSD: Body acceleration [$(m/s^2)^2Hz$]", fontsize=11)
@@ -363,64 +398,6 @@ def plot_quarter(name: str):
     plt.yticks(fontsize=16)
     plt.grid()
     plt.legend(fontsize=16)
-
-
-
-    # time trace simplified
-    time_trace_length = 150
-    plt.figure(figsize=(10, 6))
-    plt.subplot(2,1,1)
-    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
-    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Acceleration [m/s^2]')
-    plt.grid()
-    plt.legend()
-
-    plt.subplot(2, 1, 2)
-    try:
-        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
-    except:
-        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Displacement [m]')
-    plt.grid()
-    plt.legend()
-
-    # time trace apendix
-    time_trace_length = 150
-    plt.figure(figsize=(10, 6))
-    plt.subplot(3,1,1)
-    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
-    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Acceleration [m/s^2]')
-    plt.grid()
-    plt.legend()
-
-    plt.subplot(3, 1, 2)
-    plt.plot(tValues[:time_trace_length], u_history[:, 0][:time_trace_length], label='Control Input')
-    plt.plot(tValues[:time_trace_length], damping_force_history[:time_trace_length], label='Total damping force - Active Damper')
-    # plt.plot(tValues[:time_trace_length], damping_force_passive[:time_trace_length], label='Total damping force - Passive Damper')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Force [N]')
-    plt.grid()
-    plt.legend()
-
-    plt.subplot(3, 1, 3)
-    try:
-        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
-    except:
-        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Displacement [m]')
-    plt.grid()
-    plt.legend()
-
-
-
-
-
 
     # time trace simplified
     time_trace_length = 150
@@ -675,7 +652,9 @@ def plot_sensitivity(name: str, plot=True):
 
 
 if __name__ == "__main__":
-    # plot_quarter("results_type_isoD_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_isoD_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_isoA_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
+    plot_quarter("results_type_bump_endT_10_f_500_tl_0.1_Np_10_quarter.pkl")
 
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
@@ -683,7 +662,7 @@ if __name__ == "__main__":
     # regenerate_A_results()
     # regenerate_D_results()
     # regenerate_bump_results()
-    plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    # plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('bump_20kph_10sec_500Hz/results_weightSens.pkl', plot=False)
-    plt.show()
+    # plt.show()
