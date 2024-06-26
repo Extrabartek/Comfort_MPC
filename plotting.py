@@ -520,6 +520,27 @@ def regenerate_A2_results():
     with open('results/road_A_20kph_3sec_500Hz/results_weightSens.pkl', 'wb') as f:
         pkl.dump(results, f)
 
+def regenerate_bump_results():
+    paraWeight = []
+    paraComfort = []
+    paraComfortWeighted = []
+    paraHolding = []
+
+    for i in np.linspace(1, 5e5, 20):
+        with open(f"results/bump_20kph_10sec_500Hz/time_traces/results_w1_1_w2_{i}.pkl", 'rb') as file:
+            state_history, output_history, u_history, road_profile_front, road_profile_rear, damping_force_history, deflection_velocity, damping_force_passive, deflection_velocity_passive, tValues, state_pass_history, output_pass_history, csf, csr, csmin, csmax, par = pkl.load(
+                file)
+
+        paraWeight.append(float(i))
+        paraComfort.append(rms(output_history[:, 0]))
+        paraHolding.append(rms(output_history[:, 1]))
+        paraComfortWeighted.append(wrms(output_history[:, 0], 1/(tValues[1]-tValues[0])))
+
+    results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
+
+    with open('results/bump_20kph_10sec_500Hz/results_weightSens.pkl', 'wb') as f:
+        pkl.dump(results, f)
+
 def plot_sensitivity(name: str, plot=True):
 
     with open('results/' + name, 'rb') as f:
@@ -552,10 +573,10 @@ if __name__ == "__main__":
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
 
-    regenerate_A_results()
-    regenerate_D_results()
-    # regenerate_A2_results()
-    plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
-    plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
-    # plot_sensitivity('road_A_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
+    # regenerate_A_results()
+    # regenerate_D_results()
+    regenerate_bump_results()
+    # plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    plot_sensitivity('bump_20kph_10sec_500Hz/results_weightSens.pkl', plot=False)
     plt.show()
