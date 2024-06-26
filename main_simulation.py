@@ -21,9 +21,9 @@ state_quarter = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]
 state_pass = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
 # Time
-f = 30  # Hz
+f = 500  # Hz
 dt = 1/f  # s
-endTime = 5  # s
+endTime = 10  # s
 tValues = np.arange(0, endTime, dt)  # the time array [s]
 Np = 10  # length of the prediction horizon in points
 Npfile = Np # file naming only, as Np is overwritten 
@@ -31,11 +31,11 @@ Npfile = Np # file naming only, as Np is overwritten
 # Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
-V = 100 / 3.6  # velocity of the car [m/s]
+V = 20 / 3.6  # velocity of the car [m/s]
 tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
-road_type = "iso"
+road_type = "bump"
 k = 3
 delay_samples = int((par.l1 + par.l2) / V * f)
 # Front bump

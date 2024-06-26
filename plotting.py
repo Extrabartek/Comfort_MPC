@@ -159,7 +159,10 @@ def plot_half(name:str):
     # plt.legend()
     #
     plt.subplot(6, 1, 6)
-    plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
+    try:
+        plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
+    except:
+        plt.plot(tValues, road_profile_front[0:-2], label='Road profile')
     plt.xlabel('Time [s]', fontsize=16)
     plt.ylabel('Displacement [m]', fontsize=16)
     plt.xticks(fontsize=16)
@@ -307,7 +310,10 @@ def plot_quarter(name: str):
     # plt.legend()
     #
     plt.subplot(6, 1, 6)
-    plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
+    try:
+        plt.plot(tValues, road_profile_front[0:-1], label='Road profile')
+    except:
+        plt.plot(tValues, road_profile_front[0:-2], label='Road profile')
     plt.xlabel('Time [s]', fontsize=16)
     plt.ylabel('Displacement [m]', fontsize=16)
     plt.xticks(fontsize=16)
@@ -508,10 +514,10 @@ def plot_sensitivity(name: str, plot=True):
 
 
 if __name__ == "__main__":
-    #plot_quarter("results_type_bump_endT_0.2_f_1000_tl_0.02_Np_10_quarter.pkl")
-    # plot_quarter("results_type_iso_endT_1_f_500_tl_0.02_Np_100_quarter.pkl")
-    plot_half("results_type_iso_endT_5_f_30_tl_0.1_Np_10_quarter.pkl")
-    # plot_quarter("bump_20kph_3sec_500hz/time_traces/results_w1_1_w2_0.01.pkl")
+    plot_quarter("results_type_isoA_endT_120_f_30_tl_0.1_Np_10_quarter.pkl")
+
+    # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
+    # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
 
     # regenerate_A_results()
     # regenerate_D_results()
