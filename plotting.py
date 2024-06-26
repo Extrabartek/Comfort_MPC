@@ -364,6 +364,118 @@ def plot_quarter(name: str):
     plt.grid()
     plt.legend(fontsize=16)
 
+
+
+    # time trace simplified
+    time_trace_length = 150
+    plt.figure(figsize=(10, 6))
+    plt.subplot(2,1,1)
+    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
+    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(2, 1, 2)
+    try:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
+    except:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Displacement [m]')
+    plt.grid()
+    plt.legend()
+
+    # time trace apendix
+    time_trace_length = 150
+    plt.figure(figsize=(10, 6))
+    plt.subplot(3,1,1)
+    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
+    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(3, 1, 2)
+    plt.plot(tValues[:time_trace_length], u_history[:, 0][:time_trace_length], label='Control Input')
+    plt.plot(tValues[:time_trace_length], damping_force_history[:time_trace_length], label='Total damping force - Active Damper')
+    # plt.plot(tValues[:time_trace_length], damping_force_passive[:time_trace_length], label='Total damping force - Passive Damper')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Force [N]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(3, 1, 3)
+    try:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
+    except:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Displacement [m]')
+    plt.grid()
+    plt.legend()
+
+
+
+
+
+
+    # time trace simplified
+    time_trace_length = 150
+    plt.figure(figsize=(10, 6))
+    plt.subplot(2,1,1)
+    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
+    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(2, 1, 2)
+    try:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
+    except:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Displacement [m]')
+    plt.grid()
+    plt.legend()
+
+    # time trace apendix
+    time_trace_length = 150
+    plt.figure(figsize=(10, 6))
+    plt.subplot(3,1,1)
+    plt.plot(tValues[:time_trace_length], output_history[:, 0][:time_trace_length], label='Body acceleration')
+    plt.plot(tValues[:time_trace_length], output_pass_history[:, 0][:time_trace_length], label='Body acceleration passive')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Acceleration [m/s^2]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(3, 1, 2)
+    plt.plot(tValues[:time_trace_length], u_history[:, 0][:time_trace_length], label='Control Input')
+    plt.plot(tValues[:time_trace_length], damping_force_history[:time_trace_length], label='Total damping force - Active Damper')
+    # plt.plot(tValues[:time_trace_length], damping_force_passive[:time_trace_length], label='Total damping force - Passive Damper')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Force [N]')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(3, 1, 3)
+    try:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-1][:time_trace_length], label='Road profile')
+    except:
+        plt.plot(tValues[:time_trace_length], road_profile_front[0:-2][:time_trace_length], label='Road profile')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Displacement [m]')
+    plt.grid()
+    plt.legend()
+
+
+
+
     #########################################
     # Actuator scatter plot
     plt.figure()
