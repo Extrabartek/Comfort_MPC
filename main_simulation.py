@@ -153,8 +153,8 @@ damping_force_passive = par.csf * (state_pass_history[:, 1] - state_pass_history
 deflection_velocity = state_history[:, 1] - state_history[:, 5]
 deflection_velocity_passive = state_pass_history[:, 1] - state_pass_history[:, 5]
 
-print(f"Active wrms: {wrms([], output_history[:, 0])}")
-print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
+print(f"Active wrms: {wrms(output_history[:, 0], f)}")
+print(f"Passive wrms: {wrms(output_pass_history[:, 0], f)}")
 
 # save the results
 results = [state_history, output_history, u_history, road_profile_front, road_profile_rear,

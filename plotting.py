@@ -30,7 +30,7 @@ def plot_spectrum_comparison(a_z):
 
 def plot_acceleration_comparison(ts, a_z):
     '''Plot the input and weighted acceleration in the time domain'''
-    a_w, w = get_a_w(a_z)
+    a_w, w = get_a_w(a_z, 1/(ts[1]-ts[0]))
 
     plt.figure()
     plt.plot(ts, a_z, label='Input')
@@ -57,9 +57,9 @@ def plot_half(name:str):
     except Exception as e:
         print(f"Error: {e}")
 
-    active_wrms = wrms([], output_history[:, 0])
-    passive_wrms = wrms([], output_pass_history[:, 0])
-    quarter_wrms = wrms([], output_quarter_history[:, 0])
+    active_wrms = wrms(output_history[:, 0], 1/(tValues[1]-tValues[0]))
+    passive_wrms = wrms(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
+    quarter_wrms = wrms(output_quarter_history[:, 0], 1/(tValues[1]-tValues[0]))
 
     print(f"Half wrms: {active_wrms}")
     print(f"Quarter wrms: {quarter_wrms}")
@@ -67,9 +67,9 @@ def plot_half(name:str):
 
     print(f"The percentage improvement in WRMS is: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
 
-    active_wrms = wrmq(output_history[:, 0], [])
-    passive_wrms = wrmq(output_pass_history[:, 0], [])
-    quarter_wrms = wrmq(output_quarter_history[:, 0], [])
+    active_wrms = wrmq(output_history[:, 0], 1/(tValues[1]-tValues[0]))
+    passive_wrms = wrmq(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
+    quarter_wrms = wrmq(output_quarter_history[:, 0], 1/(tValues[1]-tValues[0]))
 
     print(f"The percentage improvement in WRMQ is {100 * (passive_wrms - active_wrms) / passive_wrms} %")
 
@@ -223,15 +223,17 @@ def plot_quarter(name: str):
     except Exception as e:
         print(f"Error: {e}")
 
-    active_wrms = wrms([], output_history[:, 0])
-    passive_wrms = wrms([], output_pass_history[:, 0])
+    active_wrms = wrms(output_history[:, 0], 1/(tValues[1]-tValues[0]))
+    passive_wrms = wrms(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
 
     print(f"The percentage improvement in WRMS is: {100 * (passive_wrms - active_wrms) / passive_wrms} %")
 
-    active_wrms = wrmq(output_history[:, 0], [])
-    passive_wrms = wrmq(output_pass_history[:, 0], [])
+    active_wrms = wrmq(output_history[:, 0], 1/(tValues[1]-tValues[0]))
+    passive_wrms = wrmq(output_pass_history[:, 0], 1/(tValues[1]-tValues[0]))
 
     print(f"The percentage improvement in WRMQ is {100 * (passive_wrms - active_wrms) / passive_wrms} %")
+
+
     plt.figure()
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('PSD: Body acceleration [(m/s^2)^2/Hz] ')
@@ -239,9 +241,13 @@ def plot_quarter(name: str):
     freq_psd, result_psd_active = signal.periodogram(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
     plt.loglog(freq_psd, result_psd, label='Passive PSD')
     plt.loglog(freq_psd, result_psd_active, label='Active PSD')
-    freq_psd, result_psd = signal.periodogram(get_a_w(output_pass_history[:, 0].ravel())[0],
+    freq_psd, result_psd = signal.welch(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    freq_psd, result_psd_active = signal.welch(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    plt.loglog(freq_psd, result_psd, label='Passive')
+    plt.loglog(freq_psd, result_psd_active, label='Active')
+    freq_psd, result_psd = signal.periodogram(get_a_w(output_pass_history[:, 0].ravel(), 1/(tValues[1]-tValues[0]))[0],
                                               fs=1 / (tValues[1] - tValues[0]))
-    freq_psd, result_psd_active = signal.periodogram(get_a_w(output_history[:, 0].ravel())[0],
+    freq_psd, result_psd_active = signal.periodogram(get_a_w(output_history[:, 0].ravel(), 1/(tValues[1]-tValues[0]))[0],
                                                      fs=1 / (tValues[1] - tValues[0]))
     plt.loglog(freq_psd, result_psd, label='Weighted Passive PSD')
     plt.loglog(freq_psd, result_psd_active, label='Weighted Active PSD')
@@ -252,6 +258,22 @@ def plot_quarter(name: str):
     plt.grid()
     plt.title('PSD of the body acceleration')
 
+    plt.figure()
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('PSD: Road holding [m^2/Hz] ')
+    # freq_psd, result_psd = signal.periodogram(output_pass_history[:, 1].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    # freq_psd, result_psd_active = signal.periodogram(output_history[:, 1].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    # plt.loglog(freq_psd, result_psd, label='Passive PSD')
+    # plt.loglog(freq_psd, result_psd_active, label='Active PSD')
+    freq_psd, result_psd = signal.welch(output_pass_history[:, 1].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    freq_psd, result_psd_active = signal.welch(output_history[:, 1].ravel(), fs=1 / (tValues[1] - tValues[0]))
+    plt.loglog(freq_psd, result_psd, label='Passive')
+    plt.loglog(freq_psd, result_psd_active, label='Active')
+    plt.legend()
+    plt.xlim([0.2, 20])
+    plt.ylim([1e-11, 5e-6])
+    plt.grid()
+    plt.title('PSD of the road holding (z_u - z_r)')
 
     plt.figure(figsize=(12, 12))
     # plt.plot(tValues, state_history[:, 0], label='Front suspension deflection')
@@ -401,7 +423,7 @@ def regenerate_D_results():
         paraWeight.append(float(f))
         paraComfort.append(rms(output_history[:, 0]))
         paraHolding.append(rms(output_history[:, 1]))
-        paraComfortWeighted.append(wrms([], output_history[:, 0]))
+        paraComfortWeighted.append(wrms(output_history[:, 0], 1/(tValues[1]-tValues[0])))
 
     results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
@@ -445,7 +467,7 @@ def regenerate_A_results():
         paraWeight.append(float(f))
         paraComfort.append(rms(output_history[:, 0]))
         paraHolding.append(rms(output_history[:, 1]))
-        paraComfortWeighted.append(wrms([], output_history[:, 0]))
+        paraComfortWeighted.append(wrms(output_history[:, 0], 1/(tValues[1]-tValues[0])))
 
     results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
@@ -486,7 +508,7 @@ def regenerate_A2_results():
         paraWeight.append(float(f))
         paraComfort.append(rms(output_history[:, 0]))
         paraHolding.append(rms(output_history[:, 1]))
-        paraComfortWeighted.append(wrms([], output_history[:, 0]))
+        paraComfortWeighted.append(wrms(output_history[:, 0], 1/(tValues[1]-tValues[0])))
 
     results = [paraWeight, paraComfort, paraHolding, paraComfortWeighted]
 
@@ -525,10 +547,10 @@ if __name__ == "__main__":
     # plot_half("results_type_isoD_endT_30_f_30_tl_0.1_Np_10_half.pkl")
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
 
-    # regenerate_A_results()
-    # regenerate_D_results()
+    regenerate_A_results()
+    regenerate_D_results()
     # regenerate_A2_results()
-    # plot_sensitivity('bump_20kph_10sec_500Hz/results_weightSens.pkl', plot=False)
-    # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
     plt.show()

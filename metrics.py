@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.fft import fft, ifft
+from scipy.fft import fft, ifft, fftfreq
 from scipy.signal import freqresp
 from scipy.signal import TransferFunction as tf
 import matplotlib.pyplot as plt
@@ -17,12 +17,16 @@ def rmq(a_z) -> np.float32:
     return RMQ
 
 
-def get_a_w(a_z):
+def get_a_w(a_z, fs):
     '''Get the weighted acceleration in the time domain using the frequency response of the weight filter'''
     # Define the frequency points
     a_z = a_z.ravel()
     n_points = len(a_z)
-    f = np.linspace(0.01, 1000, n_points)
+
+    # Compute the FFT of the input acceleration
+    A_f = fft(a_z)
+    f = fftfreq(n_points, d=1/fs)
+
     w = f * 2 * np.pi
 
     # Define the transfer functions using tf
@@ -30,9 +34,6 @@ def get_a_w(a_z):
 
     # Calculate magnitude and phase
     w, magWeightVertical = freqresp(Wv, w)
-
-    # Compute the FFT of the input acceleration
-    A_f = fft(a_z)
 
     # Multiply the FFT of the input acceleration by the frequency response
     A_w_f = A_f * magWeightVertical
@@ -43,19 +44,19 @@ def get_a_w(a_z):
     return a_w, w
 
 
-def wrms(ts, a_z) -> np.float32:
+def wrms(a_z, fs) -> np.float32:
     '''Weighted root mean square'''    
     
-    a_w,_ = get_a_w(a_z)
+    a_w,_ = get_a_w(a_z, fs)
     # Compute the integral for the WRMS calculation
     WRMS = rms(a_w)
 
     return WRMS
 
-def wrmq(a_z, ts) -> np.float32:
+def wrmq(a_z, fs) -> np.float32:
     '''Weighted root mean quartic'''
     # Define the time step
-    a_w,_ = get_a_w(a_z)
+    a_w,_ = get_a_w(a_z, fs)
     WRMQ = rmq(a_w)
 
     return WRMQ
@@ -64,7 +65,7 @@ def rwrms(a_z, ts) -> np.ndarray:
     '''Running weighted root mean square'''
     dt = ts[1] - ts[0]
     
-    a_w,_ = get_a_w(a_z)
+    a_w,_ = get_a_w(a_z, 1/dt)
     
     rwrms = np.zeros_like(a_w)
     
@@ -77,7 +78,7 @@ def rwrms(a_z, ts) -> np.ndarray:
         # T = t_sum[i]
         # T_prev = t_sum[i-1]
         # rwrms[i] = (1/np.sqrt(T)) * np.sqrt(T_prev * rwrms[i-1]**2 + a_w[i]**2 * dt)
-        rwrms[i] = wrms(ts[:i], a_z[:i])
+        rwrms[i] = wrms(a_z[:i], 1/dt)
         
     return rwrms
     
@@ -85,7 +86,7 @@ def vdv(a_z, ts) -> np.float32:
     '''Vibration dose value'''
     dt = ts[1] - ts[0]
 
-    a_w,_ = get_a_w(a_z)
+    a_w,_ = get_a_w(a_z, 1/dt)
     
     vdv = (np.sum(np.power(a_w, 4))*dt)**(1/4)
     

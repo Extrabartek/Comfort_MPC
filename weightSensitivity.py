@@ -154,8 +154,8 @@ def runMain(w1Iter, w2Iter):
     deflection_velocity = state_history[:, 1] - state_history[:, 5]
     deflection_velocity_passive = state_pass_history[:, 1] - state_pass_history[:, 5]
 
-    print(f"Active wrms: {wrms([], output_history[:, 0])}")
-    print(f"Passive wrms: {wrms([], output_pass_history[:, 0])}")
+    print(f"Active wrms: {wrms(output_history[:, 0], f)}")
+    print(f"Passive wrms: {wrms(output_pass_history[:, 0], f)}")
 
     cost_rms = np.mean(output_history[:, 0]**2)**0.5
     cost_holding = np.mean(output_history[:, 1]**2)**0.5
@@ -173,7 +173,7 @@ def runMain(w1Iter, w2Iter):
     with open('results/bump_20kph_3sec_500Hz/time_traces/' + name, 'wb') as f:
         pkl.dump(results, f)
 
-    return cost_rms, cost_holding, wrms([], output_history[:, 0])
+    return cost_rms, cost_holding, wrms(output_history[:, 0], f)
 
 import matplotlib.pyplot as plt
 
