@@ -232,19 +232,25 @@ def plot_quarter(name: str):
     passive_wrms = wrmq(output_pass_history[:, 0], [])
 
     print(f"The percentage improvement in WRMQ is {100 * (passive_wrms - active_wrms) / passive_wrms} %")
-
+    plt.figure()
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('PSD: Body acceleration [(m/s^2)^2/Hz] ')
     freq_psd, result_psd = signal.periodogram(output_pass_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
     freq_psd, result_psd_active = signal.periodogram(output_history[:, 0].ravel(), fs=1 / (tValues[1] - tValues[0]))
     plt.loglog(freq_psd, result_psd, label='Passive PSD')
     plt.loglog(freq_psd, result_psd_active, label='Active PSD')
+    freq_psd, result_psd = signal.periodogram(get_a_w(output_pass_history[:, 0].ravel())[0],
+                                              fs=1 / (tValues[1] - tValues[0]))
+    freq_psd, result_psd_active = signal.periodogram(get_a_w(output_history[:, 0].ravel())[0],
+                                                     fs=1 / (tValues[1] - tValues[0]))
+    plt.loglog(freq_psd, result_psd, label='Weighted Passive PSD')
+    plt.loglog(freq_psd, result_psd_active, label='Weighted Active PSD')
     plt.legend()
-    plt.xlim([1e-2, 25])
-    plt.hlines(1, 0, 1000, linestyle='--')
-    plt.ylim([1e-9, 1e1])
+    plt.xlim([0.2, 20])
+    plt.hlines(1, 0, 1000, linestyle='--', colors='black')
+    plt.ylim([1e-7, 5e0])
     plt.grid()
-    plt.title('This should work')
+    plt.title('PSD of the body acceleration')
 
 
     plt.figure(figsize=(12, 12))
@@ -522,7 +528,7 @@ if __name__ == "__main__":
     # regenerate_A_results()
     # regenerate_D_results()
     # regenerate_A2_results()
-    # plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
+    # plot_sensitivity('bump_20kph_10sec_500Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_20kph_3sec_500Hz/results_weightSens.pkl', plot=False)
-    # plt.show()
+    plt.show()

@@ -6,7 +6,7 @@
 !bump_20kph_3sec_500Hz/*.pkl
 !bump_20kph_3sec_500Hz/time_traces/*.pkl
 !bump_20kph_10sec_500Hz/*.pkl
-!bump_20kph_10sec_500Hz/time_traces/*.pkl
+!bump_20kph_10sec_50e0Hz/time_traces/*.pkl
 !road_A_20kph_3sec_500Hz/*.pkl
 !road_A_20kph_3sec_500Hz/time_traces/*.pkl
 !results_type_isoA_endT_120_f_30_tl_0.1_Np_10_quarter.pkl
