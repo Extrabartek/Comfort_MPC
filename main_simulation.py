@@ -31,7 +31,7 @@ Npfile = Np # file naming only, as Np is overwritten
 # Bump parameters (dependent on bump profile)
 A = 0.1  # amplitude of the bump [m]
 L = 0.5  # length of the bump [m]
-V = 100 / 3.6  # velocity of the car [m/s]
+V = 25 / 3.6  # velocity of the car [m/s]
 tl = 0.1  # time of the bump [s]
 
 l = tl * V  # position of the bump [m]
