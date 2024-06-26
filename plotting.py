@@ -655,14 +655,16 @@ def plot_sensitivity(name: str, plot=True):
     plt.scatter(paraHolding, paraComfort, c=paraWeight, cmap='viridis')
     plt.ylabel("Comfort Index", fontsize=11)
     plt.xlabel("Road Holding Index", fontsize=11)
-    plt.colorbar()
+    cbar = plt.colorbar()
+    cbar.set_label('Weight Parameter [-]')
     
     plt.figure()
     plt.grid()
     plt.scatter(paraHolding, paraComfortWeighted, c=paraWeight, cmap='viridis')
     plt.xlabel("Road Holding Index", fontsize=11)
     plt.ylabel("Weighted Comfort Index", fontsize=11)
-    plt.colorbar()
+    cbar = plt.colorbar()
+    cbar.set_label('Weight Parameter [-]')
     
     if plot:
         plt.show()
@@ -677,7 +679,7 @@ if __name__ == "__main__":
     # plot_half("results_type_bump_endT_5_f_100_tl_0.1_Np_10_half.pkl")
 
     # regenerate_A_results()
-    regenerate_D_results()
+    # regenerate_D_results()
     # regenerate_bump_results()
     plot_sensitivity('road_D_25kph_30sec_30Hz/results_weightSens.pkl', plot=False)
     # plot_sensitivity('road_A_100kph_30sec_30Hz/results_weightSens.pkl', plot=False)
